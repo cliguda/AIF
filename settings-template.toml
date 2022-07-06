@@ -1,0 +1,52 @@
+[common]
+project_path = 'PROJECT_PATH'               # Use absolut path (in linux starting with '/'')
+log_debug_filename = '/log/debug.log'
+log_alert_filename = '/log/alerts.log'
+log_root_filename = '/log/logging_root.log' # For libraries using the default logger.
+log_console_level = 'info'                  # debug, info
+random_seed = 42
+
+[data_provider]
+# 'binance' or 'gemini' are currently supported. 'gemini' works without API Key, for binance add keys to secrets.toml
+exchange = 'gemini'
+filename_template = '/data/{asset}_{timeframe}_{exchange}.csv'
+filename_testing = '/data/BTCUSD_HOURLY_TESTING.csv'
+
+[data_preparation]
+
+[evaluation]
+cv_folds_testing = 3                        # Number of folds used for cross validation
+cv_fold_size_daily_testing = 30             # One fold contains the last X days
+cv_fold_size_hourly_testing = 720           # 30 days: 24 * 30
+cv_folds_validation = 2                     # Used in the validation phase for hyper-parameter optimization
+cv_fold_size_daily_validation = 30          # One fold contains the last X days
+cv_fold_size_hourly_validation = 720        # 30 days: 24 * 30
+
+
+[strategies]
+threshold_strategy_winrate = 0.45           # Reject strategies with a cross-validated winrate below the threshold
+threshold_strategy_pps = 0.1                # Reject strategies with a cross-validated avg. performance per signal
+                                            # below the threshold.
+allowed_negative_folds = 1                  # Reject strategies, when the total performance of >X folds is negative.
+
+# Advanced feature that should not need any adjustment!
+# If a strategy needs data older then the current entry (e.g. by using a SHIFT command that shifts older values to
+# future entries), the lookback window needs to be expanded.
+# E.g. if a strategy needs 200 entries to calculate an indicator (e.g. EMA_200) for the current value,
+# a factor of 1.5 extends the window to 300, so that 100 entries with all indicators are available for a strategy.
+# Thereby the SHIFT command can be used to shift older entries up to 100 time-intervals to the current value.
+lookback_window_adjustment_factor = 1.5
+
+[trading]
+live_mode = false           # WARNING: READ DISCLAIMER FIRST !!!
+size_per_trade = 0.05       # Size per trade of the total equity, e.g. if an account holds 1000$ and the size per trade
+                            # is 0.05, the size per trade will be 50$.
+leverage_reduction = 0.1    # To avoid a over-leveraging and the risk of false liquidation, because of slippage, etc.
+                            # the leverage will be reduced by this factor (e.g. a 20 leverage and reduction of 0.1 will
+                            # result in a 18 leverage).
+default_max_leverage = 50   # If no connection to an exchange is available, use this value as max. leverage.
+default_fees = 0.0006       # If no connection to an exchange is available, use this value as trading fees.
+
+[testing]
+skip_update_historical_data = false  # Skip to reduce unnecessary API calls. For heave testing, please set to true.
+skip_update_price_data = false       # Skip to reduce unnecessary API calls. For heave testing, please set to true.

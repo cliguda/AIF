@@ -1,0 +1,14 @@
+name: aif
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - ta-lib=0.4.19
+  - numpy=1.21.6
+  - pandas=1.4.2
+  - numba=0.55.1
+  - scikit-learn=1.0.2
+  - plotly=5.7.0
+  - requests=2.27.1
+  - pytest=6.2.5

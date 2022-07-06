@@ -1,0 +1,15 @@
+.git/
+.idea/
+.mypy_cache/
+.pytest_cache/
+.run/
+data/
+evaluation/
+log/
+venv/
+*.pyc
+*cpython-39*
+*__pycache__*
+*.log
+secrets.toml
+settings.toml
