@@ -11,30 +11,30 @@
 # Intro
 
 AIF is a framework to analyse cryptocurrencies, develop sophisticated strategies and generate trading signals. The main
-focus in the developing process was to bring ideas from Software Architecture and Data Science together to provide a
-scalable and easy to extend framework to leverage artificial intelligence on financial data. Some main features of AIF
-are:
+focus during the developing process was to build a scalable and easy to extend framework to leverage artificial
+intelligence on financial data. Therefore, ideas from Software Architecture and Data Science were brought together, to
+provide the following main features:
 
-- Able to handle different assets (BTC, ETH, ...)
-- Use historical data for backtesting and together with real-time data for generating trading signals.
-- Merge data from different timeframes together, to analyze short term movements by considering a long term trend.
+- Ability to handle different assets (BTC, ETH, ...)
+- Backtesting and cross-validate strategies with historical data to ensure, that only profitable strategies are used (
+  Trading fees are considered in the evaluation process).
+- Merge data from different timeframes together, to analyse short term movements by considering a long term trend.
 - Augmenting price data with several indicators on different timeframes.
-- Use rule based strategies together with stop-loss/take-profit and exit strategies for sophisticated trading signals.
+- Use rule based strategies in combination with stop-loss/take-profit and exit strategies for sophisticated long and
+  short trading signals.
 - Bring the power of Data Science to trading, by applying machine learning methods to identify optimal entry points for
   trades.
-- Backtest and cross-validate strategies to ensure, that only profitable strategies are used (Trading fees are
-  considered in the evaluation process).
-- Run experiments to develop new strategies and analyze the performance with backtesting, cross-validation and plotting
+- Run experiments to develop new strategies and analyse the performance with backtesting, cross-validation and plotting
   to understand the pros and cons of your strategies.
-- Run in Bot-mode to apply different strategies (long and short) to multiple assets on an hourly basis.
+- Run in Bot-mode to apply different strategies to real-time data of multiple assets on an hourly basis.
 - AIF comes with an option to places trades automatically. WARNING: This feature is for education purpose only.
-- Sending alerts for trading signals to your smartphone.
+- Sending alerts for trading signals to your mobile device.
 
 # Installation
 
 **PLEASE READ THE DISCLAIMER FIRST!**
 
-To setup the program, the following steps are necessary (Tested on AWS t2.micro instance with Ubuntu 22.04).
+To setup the program, the following steps are mandatory (Tested on AWS t2.micro instance with Ubuntu 22.04).
 
 **Update apt**:
 
@@ -45,16 +45,18 @@ To setup the program, the following steps are necessary (Tested on AWS t2.micro 
 
 - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 - bash Miniconda3-latest-Linux-x86_64.sh
-  - Agree terms and install in default location
-  - Answer init question after installation: "yes"
+    - Agree terms and install in default location
+    - Answer init question after installation: "yes"
 
 **restart shell**: e.g. log-off and log-in again
 
-**Checkout project from git**: 
- - git clone https://github.com/cliguda/AIF.git
- - cd AIF
+**Checkout project from git**:
+
+- git clone https://github.com/cliguda/AIF.git
+- cd AIF
 
 **Create virtual environment**:
+
 - conda update -n base -c defaults conda
 - conda config --set channel_priority strict
 - conda env create -f environment.yml
@@ -101,18 +103,17 @@ To understand the code the following main concepts are important:
   meta-information PriceData can also aggregate the data to higher timeframes (e.g. 4-hourly, daily, ...) and can
   combine all data into a single DataFrame. Beside the main OHLCV data, additional indicators can be added to all
   timeframes. Furthermore, all values that can be put in relation to the closing price, can be converted as such in one
-  step. This approach is very useful for machine learning, because the relative distance between the closing price and
-  e.g. the EMA 20 is more suitable for most ML methods than the absolut value of the EMA 20.
-- **Indicator**: All indicators are implemented by inheriting from the Indicator class. In doing so, some relevant
+  step. This approach is very beneficial for machine learning, because the relative distance between the closing price
+  and e.g. the EMA 20 is more suitable for most ML methods than the absolute value of the EMA 20.
+- **Indicator**: All indicators are implemented by inheriting from the Indicator class. While doing so, some relevant
   meta-information are added to PriceData, when the indicator is applied.
-- **DataProvider**: The DataProvider is the only class needed to load historical as well as real-time data for all
-  assets. Currently, data from Gemini and Binance are supported, but for real-time data from Binance an API key is
-  necessary.
+- **DataProvider**: The DataProvider is the only class needed to load historical and real-time data for all assets.
+  Currently, data from Gemini and Binance are supported, but for real-time data from Binance an API key is necessary.
 - **Strategy**: The Strategy class provides a flexible approach to define all kind of strategies. For some examples,
-  check the strategies in library. A strategy is agnostic about assets and timeframes and before a strategy can be
+  check the strategies in the library. A strategy is agnostic about assets and timeframes and before a strategy can be
   applied, it needs to be initialized for a concrete PriceData object.
 - **StrategyManager**: The StrategyManager class keeps track of all strategies and the assets they should be applied to.
-- **PortfolioManager**: The PortfolioManager is the connection to different exchanges. In the current version, API keys
+- **PortfolioManager**: The PortfolioManager is the connection for different exchanges. In the current version, API keys
   for ByBit can be provided to place orders and to receive additional trading information for the assets on the
   exchange (e.g. max. leverage, trading fees).
 
@@ -130,12 +131,11 @@ first understanding of defining and evaluating strategies. For a deeper understa
 PyCharm) to go through the code.
 
 The trades of the strategies can also be plotted by using the plot_data.py script. The script can also plot the
-distribution of indicators for winning and loosing trade. This can be used to evaluate, if loosing trades correlate with
-certain ranges of an indicator (e.g. more loosing trades, when RSI < 30).
+distribution of indicators for winning and losing trade. This can be used to evaluate, if losing trades correlate with
+certain ranges of an indicator (e.g. more losing trades, when RSI < 30).
 
-By using the default configuration, the run_bot.py script uses public available data that do not require an API key. The
-script starts the bot and will apply all profitable strategies to all assets to generate trading signals on an hourly
-basis. 
-
+By using the default configuration, the run_bot.py script uses publicly available data that do not require an API key.
+The script starts the bot and will apply all profitable strategies to all assets for generating trading signals on an
+hourly basis.
 
 **Stay tuned for more content coming soon....**

@@ -132,7 +132,7 @@ class Bot:
 
         # Placing the order
         if order is None:
-            logging.get_aif_logger(__name__).debug(
+            logging.get_aif_logger(__name__).info(
                 f'No tradingsignal found for {price_data.asset} on {price_data.timeframe}.')
         else:
             logging.get_aif_logger(__name__).info(f'Tradingsignal with order: {order}')
