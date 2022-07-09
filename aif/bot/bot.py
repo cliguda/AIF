@@ -22,6 +22,7 @@ import schedule
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
+from aif import settings
 from aif.bot.order_management.order_status import OrderStatus
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.data_manangement.data_provider import DataProvider
@@ -48,7 +49,7 @@ class Bot:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
 
-        schedule.every().hour.at(":41").do(self._bot_job)
+        schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
         schedule.every().day.at("03:30").do(self._update_data_job)
         logging.get_aif_logger(__name__).info('Bot started. Start looping....')
 

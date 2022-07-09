@@ -37,6 +37,9 @@ allowed_negative_folds = 1                  # Reject strategies, when the total 
 # Thereby the SHIFT command can be used to shift older entries up to 100 time-intervals to the current value.
 lookback_window_adjustment_factor = 1.5
 
+[bot]
+run_hourly_at = ':00'
+
 [trading]
 live_mode = false           # WARNING: READ DISCLAIMER FIRST !!!
 size_per_trade = 0.05       # Size per trade of the total equity, e.g. if an account holds 1000$ and the size per trade
