@@ -107,9 +107,26 @@ class Bot:
         logging.get_aif_logger(__name__).info('Bot-Status: Iteration completed...taking a nap now.')
 
     def _apply_exit_strategies_for_price_data(self, price_data: PriceData) -> None:
-        """When a order was placed successfully by a strategy, the strategy can add an exit strategy for that trade.
-        If an exit strategy is available, it is applied to take actions on a possible exit signal. When the exit
-        strategy is applied successfully, it is removed from the strategy manager, since the trade is closed now."""
+        """When an order was placed successfully by a strategy, the strategy can add an exit strategy for that trade.
+        Before an exit strategy is applied, we check for an existing trade, because trade could have been closed by
+        TP/SL. If a position is still open, the exit strategy is applied to identify a possible exit signal. When
+        an exit signal is found, the exit strategy is removed from the strategy manager, since the trade is closed
+        now. """
+
+        # Check for trade, if an exit strategy exists.
+        context = Context(asset=price_data.asset, timeframe=price_data.timeframe)
+        if context not in self.strategy_manager.exit_strategies.keys():
+            return  # No exit strategy available
+
+        active_positions = self.pm.get_active_positions(asset=price_data.asset)
+        if not any([p.position_size > 0 for p in active_positions]):
+            logging.get_aif_logger(__name__).info(
+                'No active positions for active exit strategy. Exit strategy will be removed!')
+            self.strategy_manager.remove_exit_strategy(asset=price_data.asset, timeframe=price_data.timeframe)
+        else:
+            logging.get_aif_logger(__name__).debug(
+                'Exit strategy for active position found. Check for exit signal.')
+
         exit_signal = self.strategy_manager.apply_exit_strategies(price_data)
         if exit_signal:
             logging.get_aif_logger(__name__).info(

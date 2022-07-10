@@ -54,13 +54,13 @@ class PortfolioManager:
 
     def get_equity_for_asset(self, asset: Asset) -> WalletBalance:
         try:
-            return self.exchanges.get(asset.name).get_equity()
+            return self.exchanges.get(asset).get_equity()
         except Exception as e:
             raise ExchangeException(str(e))
 
     def get_active_positions(self, asset: Asset) -> list[PositionInformation]:
         try:
-            return self.exchanges.get(asset.name).get_active_positions(asset)
+            return self.exchanges.get(asset).get_active_positions(asset)
         except Exception as e:
             raise ExchangeException(str(e))
 
