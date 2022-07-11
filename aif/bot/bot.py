@@ -51,7 +51,7 @@ class Bot:
 
         schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
         schedule.every().day.at("02:15").do(self._update_data_job)
-        schedule.every().day.at("02:30").do(self._reevaluate_strategies_job())
+        schedule.every().day.at("02:30").do(self._reevaluate_strategies_job)
 
         logging.get_aif_logger(__name__).info('Bot started. Start looping....')
 
