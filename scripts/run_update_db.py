@@ -15,7 +15,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from aif.common.license import get_license_notice
+import aif.common.logging as logging
+from aif.data_manangement.data_provider import DataProvider
+from aif.data_manangement.definitions import Asset, Context, Timeframe
 
 """
 This script updates the historical data for the given assets.
@@ -29,13 +33,14 @@ Configurations:
     depending on the API.
 """
 
-import aif.common.logging as logging
-from aif.data_manangement.data_provider import DataProvider
-from aif.data_manangement.definitions import Asset, Context, Timeframe
 
 PARAM_UPDATE = [
     Context(Asset.BTCUSD, Timeframe.HOURLY),
     Context(Asset.ETHUSD, Timeframe.HOURLY),
+    Context(Asset.BNBUSD, Timeframe.HOURLY),
+    Context(Asset.XRPUSD, Timeframe.HOURLY),
+    Context(Asset.ADAUSD, Timeframe.HOURLY),
+    Context(Asset.SOLUSD, Timeframe.HOURLY),
 ]
 
 
@@ -43,7 +48,8 @@ def main():
     print(get_license_notice())
     dp = DataProvider()
     for context in PARAM_UPDATE:
-        logging.get_aif_logger(__name__).info(f'Updating database for {context.asset.name} on {context.timeframe.name}.')
+        logging.get_aif_logger(__name__).info(
+            f'Updating database for {context.asset.name} on {context.timeframe.name}.')
         dp.update_historical_data(context.asset, context.timeframe)
 
 

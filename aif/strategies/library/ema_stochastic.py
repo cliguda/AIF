@@ -85,7 +85,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
             IndicatorConfiguration('EMA', 200, None),
             IndicatorConfiguration('Stochastic', 14, None),
             IndicatorConfiguration('RSI', 14, None),
-            IndicatorConfiguration('LastLow', 10, None),
+            IndicatorConfiguration('LastHigh', 10, None),
         ]
     }
     price_data_configurations = PriceDataConfiguration(indicator_conf)

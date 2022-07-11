@@ -44,6 +44,10 @@ class PortfolioManager:
         self.exchanges = {
             Asset.BTCUSD: exchange_bybit,
             Asset.ETHUSD: exchange_bybit,
+            Asset.BNBUSD: exchange_bybit,
+            Asset.XRPUSD: exchange_bybit,
+            Asset.ADAUSD: exchange_bybit,
+            Asset.SOLUSD: exchange_bybit,
         }
 
         self.live_mode = settings.trading.live_mode

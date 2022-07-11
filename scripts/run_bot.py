@@ -34,10 +34,10 @@ Main script to start the bot. By default the live mode is disabled (settings.tom
 is activated, API keys for the exchanges must be provided (in secrets.toml). In default mode, trading signals are
 logged to the console and to log_alert_filename (see settings).
 
------------------------------------------------------------------------------------
-WARNING: The program, all results and the live mode are for education purpose only! 
+-------------------------------------------------------------------------------------------
+WARNING: The program, all results and the live mode are for education and fun purpose only! 
          READ THE DISCLAIMER BEFORE TAKING ANY ACTIONS!
------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
 
 Notes:
 - The bot will run every hour and apply all relevant strategies to the price data. (Currently only hourly strategies
@@ -58,6 +58,10 @@ Configurations:
 PARAM_CONTEXT = [
     Context(Asset.BTCUSD, Timeframe.HOURLY),
     Context(Asset.ETHUSD, Timeframe.HOURLY),
+    Context(Asset.BNBUSD, Timeframe.HOURLY),
+    Context(Asset.XRPUSD, Timeframe.HOURLY),
+    Context(Asset.ADAUSD, Timeframe.HOURLY),
+    Context(Asset.SOLUSD, Timeframe.HOURLY),
 ]
 
 # Define all strategies to use

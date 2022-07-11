@@ -81,11 +81,19 @@ class StrategyPerformance:
     pps: float
     performance_detailed: list[float]
 
+    def __str__(self):
+        x = [str(round(p * 100, 2)) + '%' for p in self.performance_detailed]
+
+        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Total Performance: ' \
+            f'{round(sum(self.performance_detailed) * 100, 2)}%'
+
+        return s
+
     def __repr__(self):
         x = [str(round(p * 100, 2)) + '%' for p in self.performance_detailed]
         performance_per_fold = ' / '.join(x)
-        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Performance per fold: ' \
-            f'{performance_per_fold}'
+        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Total Performance: ' \
+            f'{round(sum(self.performance_detailed) * 100, 2)}% / Performance per fold: {performance_per_fold}'
 
         return s
 

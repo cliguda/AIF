@@ -22,9 +22,9 @@ import schedule
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-from aif.common.config import settings
 from aif.bot.order_management.order_status import OrderStatus
 from aif.bot.order_management.portfolio_manager import PortfolioManager
+from aif.common.config import settings
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Context
 from aif.data_manangement.price_data import PriceData, PriceDataComplete
@@ -45,9 +45,13 @@ class Bot:
 
     def run(self):
         """This method will not return and continue to iterate forever."""
-        if len(self.strategy_manager.current_strategies) == 0:
+        number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
+
+        if number_of_strategies == 0:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
+
+        logging.get_aif_logger(__name__).info(f'Starting bot with {number_of_strategies} strategies')
 
         schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
         schedule.every().day.at("02:15").do(self._update_data_job)

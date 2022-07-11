@@ -104,7 +104,8 @@ class DataProvider:
                                             exchange=settings.data_provider.exchange)
         price_data_df.to_csv(filename, index=True)
 
-        logging.get_aif_logger(__name__).info(f'Updated historical data for {asset.name} on {timeframe.name}.')
+        logging.get_aif_logger(__name__).info(f'Updated historical data for {asset.name} on {timeframe.name}. '
+                                              f'Data from {min(price_data_df.index)} until {max(price_data_df.index)}.')
 
     def get_updated_price_data(self, price_data: PriceData, use_lookback_window: bool) -> PriceDataComplete:
         """Returns a new PriceData instance with update price information. If use_lookback_window is True, the
