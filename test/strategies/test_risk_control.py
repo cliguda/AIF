@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pandas as pd
 
-from aif import settings
+from aif.common.config import settings
 from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.trade_risk_control import TradeRiskControl
 

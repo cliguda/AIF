@@ -22,7 +22,7 @@ import schedule
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-from aif import settings
+from aif.common.config import settings
 from aif.bot.order_management.order_status import OrderStatus
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.data_manangement.data_provider import DataProvider
@@ -45,12 +45,14 @@ class Bot:
 
     def run(self):
         """This method will not return and continue to iterate forever."""
-        if len(self.strategy_manager.strategies) == 0:
+        if len(self.strategy_manager.current_strategies) == 0:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
 
         schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
-        schedule.every().day.at("03:30").do(self._update_data_job)
+        schedule.every().day.at("02:15").do(self._update_data_job)
+        schedule.every().day.at("02:30").do(self._reevaluate_strategies_job())
+
         logging.get_aif_logger(__name__).info('Bot started. Start looping....')
 
         while True:
@@ -65,11 +67,13 @@ class Bot:
                 logging.get_aif_logger(__name__).debug(f'Updating {context}')
                 indicator_conf = price_data.get_indicator_configuration()
                 aggregations = price_data.aggregations
+                asset_information = price_data.asset_information
 
                 self.dp.update_historical_data(asset=context.asset, timeframe=context.timeframe)
                 price_data_new_tf = self.dp.get_historical_data(asset=context.asset, timeframe=context.timeframe)
                 price_data_new = PriceDataComplete.create_from_timeframe(price_data_tf=price_data_new_tf,
-                                                                         aggregations=aggregations)
+                                                                         aggregations=aggregations,
+                                                                         asset_information=asset_information)
                 ta.add_indicators(price_data_new, indicator_conf)
 
                 self.price_data_list[context] = price_data_new
@@ -77,10 +81,21 @@ class Bot:
                                                        f'{max(price_data_new_tf.price_data_df.index)})')
             except Exception as e:
                 logging.get_aif_logger(__name__).error(
-                    f'Something went really wrong while updating {price_data.asset.name} on '
-                    f'{price_data.timeframe.name}: {e}')
+                    f'Something went really wrong while updating {price_data.context}: {e}')
 
         logging.get_aif_logger(__name__).info('Bot-Status: Update completed.')
+
+    def _reevaluate_strategies_job(self) -> None:
+        """The method reevaluates all strategies."""
+        logging.get_aif_logger(__name__).info('Bot-Status: Start reevaluating strategies...')
+        for price_data in self.price_data_list.values():
+            try:  # Not the best to put the complete block in a try/except, but it avoids the total crash.
+                self.strategy_manager.reevaluate_all_strategies(price_data=price_data)
+            except Exception as e:
+                logging.get_aif_logger(__name__).error(
+                    f'Something went really wrong while reevaluating strategies for {price_data.context}: {e}')
+
+        logging.get_aif_logger(__name__).info('Bot-Status: Reevaluation completed.')
 
     def _bot_job(self) -> None:
         """The method for iterating over all strategies and applying them to the given data once."""
@@ -102,7 +117,7 @@ class Bot:
                 self._apply_entry_strategies_for_price_data(price_data)
             except Exception as e:
                 logging.get_aif_logger(__name__).error(
-                    f'Something went really wrong for {price_data.asset.name} on {price_data.timeframe.name}: {e}')
+                    f'Something went really wrong while applying strategies for {price_data.context}: {e}')
 
         logging.get_aif_logger(__name__).info('Bot-Status: Iteration completed...taking a nap now.')
 

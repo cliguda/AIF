@@ -23,6 +23,9 @@ from aif.common.config import settings
 
 __logger_initialized = False
 
+FORMAT_MSG = '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
+
 
 class PushsaferHandler(logging.StreamHandler):
 
@@ -41,6 +44,10 @@ def get_aif_logger(name: str):
     # Add logging level ALERT if called the first time.
     global __logger_initialized
     if not __logger_initialized:
+        # Set root logger
+        filename = f'{settings.common.project_path}{settings.common.log_root_filename}'
+        logging.basicConfig(format=FORMAT_MSG, datefmt=FORMAT_DATE, level=logging.INFO, filename=filename)
+
         # Adding a new level ACTION for actions that are initiated by the program.
         logging.addLevelName(100, 'ACTION')
         setattr(logging, 'ACTION', 100)
@@ -56,13 +63,11 @@ def get_aif_logger(name: str):
 
     logger = logging.getLogger(name)
     if len(logger.handlers) == 0:
-        logger = logging.getLogger(name)
         logger.propagate = False
         logger.setLevel(logging.DEBUG)
 
         # Create a formatter that is used by all handlers TODO: Convert to UTC?
-        formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-                                      datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(FORMAT_MSG, datefmt=FORMAT_DATE)
 
         # Create handlers
         # Log everything from level DEBUG to file

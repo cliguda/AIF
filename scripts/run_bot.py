@@ -25,9 +25,8 @@ from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Asset, Context, Timeframe
-from aif.data_manangement.price_data import PriceData, PriceDataComplete
+from aif.data_manangement.price_data import PriceDataComplete
 from aif.data_preparation.indicator_config import PriceDataConfiguration
-from aif.strategies import backtest
 from aif.strategies.strategy_manager import StrategyManager
 
 """
@@ -76,6 +75,7 @@ PARAM_AGGREGATIONS = [Timeframe.FOURHOURLY]
 def main():
     print(get_license_notice())
     dp = DataProvider()
+    pm = PortfolioManager()
 
     # Merging the configuration for all strategies
     price_data_conf = PriceDataConfiguration()
@@ -84,37 +84,30 @@ def main():
         price_data_conf.merge(strategy_conf.price_data_configuration)
 
     logging.get_aif_logger(__name__).info('Status: Update, load and prepare data....')
+
+    asset_information = pm.get_all_asset_information()  # Get meta-information for assets
+
     price_data_all: dict[Context, PriceDataComplete] = {}
     for context in PARAM_CONTEXT:
+        logging.get_aif_logger(__name__).info(f'Load and prepare data for {context.asset} on {context.timeframe}')
         dp.update_historical_data(context.asset, context.timeframe)
 
         # Get data
         price_data_tf = dp.get_historical_data(context.asset, context.timeframe)
-        price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=PARAM_AGGREGATIONS)
+        price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=PARAM_AGGREGATIONS,
+                                                             asset_information=asset_information[context.asset])
         price_data_all[context] = price_data
 
-        logging.get_aif_logger(__name__).info(f'Preparing data for {context.asset} on {context.timeframe}')
         ta.add_indicators(price_data_all[context], price_data_conf.configurations)
 
     # Setup strategies
     sm = StrategyManager()
 
-    pm = PortfolioManager()
-    asset_information = pm.get_all_asset_information()
-
     logging.get_aif_logger(__name__).info('Status: Create strategies....')
     for s in PARAM_STRATEGIES:
         for context, price_data in price_data_all.items():
             strategy = s().strategy
-
-            performance = backtest.cross_validate_strategy(strategy=strategy, price_data=price_data,
-                                                           max_leverage=asset_information[context.asset].max_leverage,
-                                                           fees_per_trade=asset_information[
-                                                               context.asset].fees_market_order)
-
-            strategy.initialize(price_data=price_data, max_leverage=asset_information[context.asset].max_leverage)
-            strategy.set_performance(performance)
-            sm.add_entry_strategy(strategy=strategy, asset=context.asset, timeframe=context.timeframe)
+            sm.add_strategy(strategy=strategy, price_data=price_data)
 
     # Run strategies every hour
     bot = Bot(price_data_list=price_data_all, strategy_manager=sm, dp=dp, pm=pm)

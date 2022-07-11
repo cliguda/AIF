@@ -21,7 +21,7 @@ from typing import Callable, Optional, Union
 
 import pandas as pd
 
-from aif import settings
+from aif.common.config import settings
 from aif.strategies.strategy_trading_type import TradingType
 
 

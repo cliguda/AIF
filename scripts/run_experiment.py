@@ -50,11 +50,16 @@ def main():
     print(get_license_notice())
     dp = DataProvider(initialize=False)
 
+    # Get max leverage for asset
+    pm = PortfolioManager()
+    asset_information = pm.get_asset_information(asset=PARAM_ASSET)
+
     # Get data
     price_data_tf = dp.get_historical_data(PARAM_ASSET, PARAM_TIMEFRAME)
     price_data = PriceDataComplete.create_from_timeframe(price_data_tf,
                                                          aggregations=[Timeframe.FOURHOURLY, Timeframe.DAILY,
-                                                                       Timeframe.WEEKLY])
+                                                                       Timeframe.WEEKLY],
+                                                         asset_information=asset_information)
 
     # Get strategy configuration
     strategy_conf: StrategyConfiguration = PARAM_STRATEGY()
@@ -62,26 +67,19 @@ def main():
     # Prepare PriceData
     ta.add_indicators(price_data, strategy_conf.price_data_configuration.configurations)
 
-    # Get max leverage for asset
-    pm = PortfolioManager()
-    asset_information = pm.get_asset_information(asset=price_data.asset)
-
     # Build and evaluate strategy
     strategy = strategy_conf.strategy
-    strategy.initialize(price_data=price_data, max_leverage=asset_information.max_leverage, skip_fitting=True)
+    strategy.initialize(price_data=price_data, skip_fitting=True)
 
     # Run complete backtest - only possible for rule based strategies
     if type(strategy.entry_signal) == str and strategy.exit_signal is None or type(strategy.exit_signal) == str:
-        performance_complete = backtest.evaluate_performance(strategy=strategy, price_data=price_data,
-                                                             fees_per_trade=asset_information.fees_market_order)
+        performance_complete = backtest.evaluate_performance(strategy=strategy, price_data=price_data)
         logging.get_aif_logger(__name__).info(f'Total performance of strategy: '
-                                          f'Winrate: {round(performance_complete.win_rate * 100, 2)}% / '
-                                          f'PPS: {round(performance_complete.pps * 100, 2)}%')
+                                              f'Winrate: {round(performance_complete.win_rate * 100, 2)}% / '
+                                              f'PPS: {round(performance_complete.pps * 100, 2)}%')
 
     # For cross validation the strategy will be reinitialized for every fold.
-    performance_cross_validation = backtest.cross_validate_strategy(strategy=strategy, price_data=price_data,
-                                                                    max_leverage=asset_information.max_leverage,
-                                                                    fees_per_trade=asset_information.fees_market_order)
+    performance_cross_validation = backtest.cross_validate_strategy(strategy=strategy, price_data=price_data)
 
     logging.get_aif_logger(__name__).info(f'CV performance of strategy: {performance_cross_validation}')
 

@@ -21,6 +21,8 @@ from datetime import datetime
 import pandas as pd
 
 import aif.strategies.strategy_helper
+from aif.common.config import settings
+from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.data_manangement.definitions import Asset, Timeframe
 from aif.data_manangement.price_data import PriceDataComplete
 from aif.strategies.strategy import Strategy
@@ -29,6 +31,8 @@ from aif.strategies.trade_risk_control import TradeRiskControl
 
 
 def test__get_exit_for_entry_signal():
+    settings.trading.default_max_leverage = 50
+
     df = pd.DataFrame(
         data={
             'Open': [0, 0, 0, 0, 0, 0],
@@ -48,7 +52,7 @@ def test__get_exit_for_entry_signal():
     risk_control = TradeRiskControl(tp=0.08, sl=0.04)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
                         exit_signal='False', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],
@@ -66,7 +70,7 @@ def test__get_exit_for_entry_signal():
     # Test Short - TP hit
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='False', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],
@@ -86,7 +90,7 @@ def test__get_exit_for_entry_signal():
     risk_control = TradeRiskControl(tp=0.08, sl=0.04)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1015', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],
@@ -105,7 +109,7 @@ def test__get_exit_for_entry_signal():
     risk_control = TradeRiskControl(tp=0.08, sl=0.02)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1015', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],
@@ -124,7 +128,7 @@ def test__get_exit_for_entry_signal():
     risk_control = TradeRiskControl(tp=0.08, sl=0.04)
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1015', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],
@@ -143,7 +147,7 @@ def test__get_exit_for_entry_signal():
     risk_control = TradeRiskControl(tp=0.08, sl=0.02)
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1015', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
     sl_price = strategy.risk_control.get_sl_price(price_data_df=price_data_df.loc[:'2021-01-01'],

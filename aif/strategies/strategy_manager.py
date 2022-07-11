@@ -19,44 +19,47 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Optional
 
 import aif.common.logging as logging
-from aif import settings
+from aif.common.config import settings
 from aif.data_manangement.definitions import Asset, Context, Timeframe
 from aif.data_manangement.price_data import PriceData
-from aif.strategies.strategy import OrderInformation, Strategy
+from aif.strategies import backtest
+from aif.strategies.strategy import OrderInformation, Strategy, StrategyPerformance
 
 
 class StrategyManager:
     """Contains all strategies for all assets and keeps track of possible exit strategies, when a trade was opened."""
 
     def __init__(self):
-        self.strategies: dict[Context, list[Strategy]] = {}
+        self.current_strategies: dict[Context, list[Strategy]] = {}
+        self.all_strategies: dict[Context, list[Strategy]] = {}  # accepted as well as rejected strategies
         self.exit_strategies: dict[Context, Strategy] = {}
 
     def get_all_contexts(self) -> list[Context]:
-        return list(self.strategies.keys())
+        return list(self.all_strategies.keys())
 
-    def add_entry_strategy(self, strategy: Strategy, asset: Asset, timeframe: Timeframe) -> bool:
+    def reevaluate_all_strategies(self, price_data: PriceData) -> None:
+        """This methods evaluates all strategies that have been added with add_strategy"""
+        logging.get_aif_logger(__name__).debug(f'Start reevaluation for {price_data.context}')
+        self.current_strategies[price_data.context] = []    # Reset current strategies
+
+        for strategy in self.all_strategies[price_data.context]:
+            self._add_entry_strategy(strategy=strategy, price_data=price_data)
+
+    def add_strategy(self, strategy: Strategy, price_data: PriceData,
+                     strategy_performance: Optional[StrategyPerformance] = None) -> bool:
         """Adds a strategy to the StrategyManager. The strategy is only accepted, if the performance of the strategy
-        fulfills the requirements provided in the settings by strategies.threshold_strategy_winrate and
-        threshold_strategy_pps.
-        WARNING: If the strategy was not initialized for asset/timeframe, an exception will arise, when the strategy
-        is applied."""
-        context = Context(asset=asset, timeframe=timeframe)
-        if (strategy.get_performance().win_rate < settings.strategies.threshold_strategy_winrate) or \
-                (strategy.get_performance().pps < settings.strategies.threshold_strategy_pps) or \
-                (len([p for p in strategy.get_performance().performance_detailed if
-                      p < 0]) > settings.strategies.allowed_negative_folds):
-            logging.get_aif_logger(__name__).info(
-                f'Rejected strategy {str(strategy)} for {str(context)} (Performance: {strategy.get_performance()})')
-            return False
+        fulfills the requirements provided in the settings.strategies. The performance can be provided (e.g. for testing
+        or if the performance has been calculated beforehand), otherwise the strategy will be cross validated."""
+        # TODO: Classifier Parameter
 
-        if context not in self.strategies.keys():
-            self.strategies[context] = []
+        # Add strategy to all_strategies, for later reevaluation
+        if price_data.context not in self.all_strategies.keys():
+            self.all_strategies[price_data.context] = []
 
-        self.strategies[context].append(strategy)
-        logging.get_aif_logger(__name__).info(
-            f'Added strategy {str(strategy)} for {str(context)} (Performance: {strategy.get_performance()})')
-        return True
+        self.all_strategies[price_data.context].append(strategy)
+
+        return self._add_entry_strategy(strategy=strategy, price_data=price_data,
+                                        strategy_performance=strategy_performance)
 
     def add_exit_strategy(self, strategy: Strategy) -> None:
         """Adds an exit strategy, generally after an order was successfully placed."""
@@ -85,13 +88,13 @@ class StrategyManager:
         strategy with the highest pps is returned."""
         context = Context(asset=price_data.asset, timeframe=price_data.timeframe)
 
-        if context not in self.strategies.keys():
+        if context not in self.current_strategies.keys():
             logging.get_aif_logger(__name__).info(f'No strategies for context {context}.')
             return None
 
         best_order: Optional[OrderInformation] = None
 
-        for strategy in self.strategies[context]:
+        for strategy in self.current_strategies[context]:
             logging.get_aif_logger(__name__).debug(f'Applying strategy {strategy} to {context}.')
             order_information = strategy.apply_entry_strategy(price_data)
             logging.get_aif_logger(__name__).debug(f'Tradingsignal for strategy: {order_information}')
@@ -115,3 +118,33 @@ class StrategyManager:
             return exit_signal
         else:
             return False
+
+    def _add_entry_strategy(self, strategy: Strategy, price_data: PriceData,
+                            strategy_performance: Optional[StrategyPerformance] = None) -> bool:
+        """This method is used from the public method add_entry_strategy, as well as in the reevaluation phase."""
+
+        if strategy_performance is None:
+            performance = backtest.cross_validate_strategy(strategy=strategy, price_data=price_data)
+        else:
+            performance = strategy_performance
+
+        strategy.initialize(price_data=price_data)
+        strategy.set_performance(performance)
+
+        if (strategy.get_performance().win_rate < settings.strategies.threshold_strategy_winrate) or \
+                (strategy.get_performance().pps < settings.strategies.threshold_strategy_pps) or \
+                (len([p for p in strategy.get_performance().performance_detailed if
+                      p < 0]) > settings.strategies.allowed_negative_folds):
+            logging.get_aif_logger(__name__).info(
+                f'Rejected strategy {str(strategy)} for {price_data.asset.name} on {price_data.timeframe.name} '
+                f'(Performance: {strategy.get_performance()})')
+            return False
+
+        context = price_data.context
+        if context not in self.current_strategies.keys():
+            self.current_strategies[context] = []
+
+        self.current_strategies[context].append(strategy)
+        logging.get_aif_logger(__name__).info(
+            f'Added strategy {str(strategy)} for {str(context)} (Performance: {strategy.get_performance()})')
+        return True

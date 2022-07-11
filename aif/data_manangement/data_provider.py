@@ -127,7 +127,8 @@ class DataProvider:
         pd_current_tf = PriceDataTimeframe(price_data_df=price_data_df, asset=price_data.asset,
                                            timeframe=price_data.timeframe)
         price_data = PriceDataComplete.create_from_timeframe(price_data_tf=pd_current_tf,
-                                                             aggregations=price_data.aggregations)
+                                                             aggregations=price_data.aggregations,
+                                                             asset_information=price_data.asset_information)
 
         return price_data
 

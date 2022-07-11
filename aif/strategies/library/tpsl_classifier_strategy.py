@@ -25,7 +25,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from aif import settings
+from aif.common.config import settings
 from aif.data_preparation.indicator_config import PriceDataConfiguration
 from aif.strategies.strategy_definitions import StrategyConfiguration
 from aif.strategies.strategy_trading_type import TradingType

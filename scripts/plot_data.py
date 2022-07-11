@@ -58,11 +58,16 @@ def main():
 
     dp = DataProvider(initialize=False)
 
+    # Get asset information first
+    pm = PortfolioManager()
+    asset_information = pm.get_asset_information(asset=PARAM_ASSET)
+
     # Get data
     price_data_tf = dp.get_historical_data(PARAM_ASSET, PARAM_TIMEFRAME)
     price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=[Timeframe.FOURHOURLY,
                                                                                       Timeframe.DAILY,
-                                                                                      Timeframe.WEEKLY])
+                                                                                      Timeframe.WEEKLY],
+                                                         asset_information=asset_information)
     # Prepare
     strategy_conf: StrategyConfiguration = PARAM_STRATEGY()
 
@@ -73,12 +78,8 @@ def main():
 
     ta.add_indicators(price_data, price_data_conf.configurations)
 
-    # Get max leverage for asset
-    pm = PortfolioManager()
-    asset_information = pm.get_asset_information(asset=price_data.asset)
-
     strategy = strategy_conf.strategy
-    strategy.initialize(price_data=price_data, max_leverage=asset_information.max_leverage, skip_fitting=True)
+    strategy.initialize(price_data=price_data, skip_fitting=True)
 
     # Filter just current data for plotting
     cv = PriceDataSplit(timeframe=PARAM_TIMEFRAME)
