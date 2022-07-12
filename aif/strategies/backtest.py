@@ -61,9 +61,10 @@ def cross_validate_strategy(strategy: Strategy, price_data: PriceData,
 
     profitable_signals = len(list(filter(lambda x: x > 0, performance_detailed)))
     win_rate = round(profitable_signals / signals, 2) if signals > 0 else np.NAN
+    pps = round(performance / signals * 100, 2) if signals > 0 else np.NAN
     logging.get_aif_logger(__name__).debug(f'Total cross-validation performance: {round(performance * 100, 2)}% with'
                                            f' {signals} signals (Win-rate: {round(win_rate * 100, 2)}% / '
-                                           f'PPS: {round(performance / signals * 100, 2)}%)')
+                                           f'PPS: {pps}%)')
 
     if signals > 0:
         pps = round(performance / signals, 3)
@@ -90,10 +91,10 @@ def evaluate_performance(strategy: Strategy, price_data: PriceData) -> StrategyP
             if exit_idx is not None:
                 last_exit_idx = exit_idx
                 performance_detailed.append(p)
-                logging.get_aif_logger(__name__).debug(f'Performance of trade from {idx} to {exit_idx}: '
+                logging.get_aif_logger(__name__).trace(f'Performance of trade from {idx} to {exit_idx}: '
                                                        f'{round(p * 100, 2)}%')
         else:
-            logging.get_aif_logger(__name__).debug(f'Skipping entry signal at {idx}. Last trade still active.')
+            logging.get_aif_logger(__name__).trace(f'Skipping entry signal at {idx}. Last trade still active.')
 
     signals = len(performance_detailed)
     performance = round(sum(performance_detailed), 2)
@@ -137,7 +138,7 @@ def _get_profit_for_signal(strategy: Strategy, price_data_df: pd.DataFrame, idx:
 
         return p, exit_signal.idx
     else:
-        logging.get_aif_logger(__name__).debug(f'No exit signal found for entry signal at {idx})')
+        logging.get_aif_logger(__name__).trace(f'No exit signal found for entry signal at {idx})')
         return 0, None
 
 

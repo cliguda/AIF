@@ -3,7 +3,7 @@ project_path = 'PROJECT_PATH'               # Use absolut path (in linux startin
 log_debug_filename = '/log/debug.log'
 log_alert_filename = '/log/alerts.log'
 log_root_filename = '/log/logging_root.log' # For libraries using the default logger.
-log_console_level = 'info'                  # debug, info
+log_console_level = 'info'                  # trace, debug, info
 random_seed = 42
 
 [data_provider]

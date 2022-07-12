@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
+import aif.strategies.library.macd_ema as library_strategy
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
 from aif.common.ml.price_data_split import PriceDataSplit
@@ -38,7 +38,7 @@ browser.
 
 PARAM_ASSET = Asset.BTCUSD
 PARAM_TIMEFRAME = Timeframe.HOURLY
-PARAM_STRATEGY = ema_stochastic_strategy.get_long_strategy_configuration    # NOTE: WITHOUT (), it's just the function!
+PARAM_STRATEGY = library_strategy.get_long_strategy_configuration    # NOTE: WITHOUT (), it's just the function!
 
 PARAM_INDICATORS_TO_PLOT = ['EMA_200']      # E.G. EMA, everything that can be plotted with the OHLC data
 PARAM_OSCILLATORS_TO_PLOT = []              # E.G. RSI, everything that should be plotted below the OHLC data.
@@ -46,7 +46,7 @@ PARAM_OSCILLATORS_TO_PLOT = []              # E.G. RSI, everything that should b
 PARAM_MARK_HIGH_LOWS = False                # Marking local highs and lows. NOTE: Takes a time....
 
 """Plots all indicators regarding to the outcome of the trades."""
-PARAM_EVAL_INDICATORS_FOR_SIGNAL = False
+PARAM_EVAL_INDICATORS_FOR_SIGNAL = True
 
 """ Adds some additional indicators on different timeframes to the price_data. This can be useful, to analyze the 
 outcome of trades regarding to different indicators."""
@@ -104,7 +104,7 @@ def main():
     if PARAM_EVAL_INDICATORS_FOR_SIGNAL:
         ppd.add_indicators_for_signal_evaluation()
 
-    ppd.plot(price_data_current, max_leverage=asset_information.max_leverage)
+    ppd.plot(price_data_current, max_leverage=asset_information.max_leverage, price_data_indicator_analysis=price_data)
 
 
 if __name__ == '__main__':

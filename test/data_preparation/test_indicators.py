@@ -36,6 +36,44 @@ def dp():
     return DataProvider(initialize=False)
 
 
+def test_atr(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.ATRBands.add_indicator(price_data_tf, 14)
+
+    # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, ['ATR_Upper_14', 'ATR_Lower_14'])
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 14
+    assert price_data_tf.relative_cols == ['ATR_Upper_14', 'ATR_Lower_14']
+
+    # Checked on tradingview
+    assert abs(price_data_tf.price_data_df.loc[price_data_tf.price_data_df.index == '2021-10-22 00:00:00',
+                                           'ATR_Upper_14'][0] - 64900) < 500
+    assert abs(price_data_tf.price_data_df.loc[price_data_tf.price_data_df.index == '2021-10-22 00:00:00',
+                                           'ATR_Lower_14'][0] - 59800) < 100
+
+
+def test_macd(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.MACD.add_indicator(price_data_tf, 26)
+
+    # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, 'MACD_Hist')
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 26
+    assert price_data_tf.relative_cols == []
+    assert price_data_tf.price_data_df.loc[price_data_tf.price_data_df.index == '2021-10-20 21:00:00',
+                                           'MACD_Hist'][0] > 0
+    assert price_data_tf.price_data_df.loc[price_data_tf.price_data_df.index == '2021-10-20 22:00:00',
+                                           'MACD_Hist'][0] < 0
+
+
 def test_volume_relative_to_average(dp):
     filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
     price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)

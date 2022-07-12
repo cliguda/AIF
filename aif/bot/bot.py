@@ -99,7 +99,9 @@ class Bot:
                 logging.get_aif_logger(__name__).error(
                     f'Something went really wrong while reevaluating strategies for {price_data.context}: {e}')
 
-        logging.get_aif_logger(__name__).info('Bot-Status: Reevaluation completed.')
+        number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
+        logging.get_aif_logger(__name__).info(
+            f'Bot-Status: Reevaluation completed with {number_of_strategies} active strategies.')
 
     def _bot_job(self) -> None:
         """The method for iterating over all strategies and applying them to the given data once."""

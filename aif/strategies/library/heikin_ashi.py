@@ -18,19 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from aif.data_manangement.definitions import Timeframe
 from aif.data_preparation.indicator_config import IndicatorConfiguration, PriceDataConfiguration
+from aif.strategies.strategy import Strategy
 from aif.strategies.strategy_definitions import StrategyConfiguration
 from aif.strategies.strategy_trading_type import TradingType
-from aif.strategies.prep_command import Command, CommandDescription
-from aif.strategies.strategy import Strategy
 from aif.strategies.trade_risk_control import TradeRiskControl
 
 
 def get_long_strategy_configuration() -> StrategyConfiguration:
     """
     Name: Heikin Ashi Candle + EMA
-    Description: Strategy based on 200 EMA and the Stochastic Indicator. The strategy is based on
-    Credits: https://www.youtube.com/watch?v=p7ZYrxZo_38
-    Status: Working on BTC - sometimes very few signals.
+    Description: Strategy based on 200 EMA and the Stochastic Indicator.
+    The strategy is inspired by: https://www.youtube.com/watch?v=p7ZYrxZo_38
     """
 
     # Define all relevant indicators
@@ -85,9 +83,8 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
 def get_short_strategy_configuration() -> StrategyConfiguration:
     """
     Name: Heikin Ashi Candle + EMA
-    Description: Strategy based on 200 EMA and the Stochastic Indicator. The strategy is based on
-    Credits: https://www.youtube.com/watch?v=p7ZYrxZo_38
-    Status: Working on BTC - sometimes very few signals.
+    Description: Strategy based on 200 EMA and the Stochastic Indicator.
+    The strategy is inspired by: https://www.youtube.com/watch?v=p7ZYrxZo_38
     """
 
     # Define all relevant indicators

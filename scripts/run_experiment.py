@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
+import aif.strategies.library.macd_ema as library_strategy
 from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
@@ -26,7 +26,7 @@ from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Asset, Context, Timeframe
 from aif.data_manangement.price_data import PriceDataComplete
 from aif.strategies import backtest
-from aif.strategies.strategy import Strategy, StrategyPerformance
+from aif.strategies.strategy import StrategyPerformance
 from aif.strategies.strategy_definitions import StrategyConfiguration
 
 """
@@ -52,7 +52,7 @@ PARAM_CONTEXT = [
     Context(Asset.SOLUSD, Timeframe.HOURLY),
 ]
 
-PARAM_STRATEGY = ema_stochastic_strategy.get_short_strategy_configuration
+PARAM_STRATEGY = library_strategy.get_short_strategy_configuration
 
 
 def get_performance(strategy_conf: StrategyConfiguration, context: Context,

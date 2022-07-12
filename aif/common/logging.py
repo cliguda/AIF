@@ -48,6 +48,18 @@ def get_aif_logger(name: str):
         filename = f'{settings.common.project_path}{settings.common.log_root_filename}'
         logging.basicConfig(format=FORMAT_MSG, datefmt=FORMAT_DATE, level=logging.INFO, filename=filename)
 
+        # Adding new level TRACE for very detailed debugging messages (e.g. individual trades in the evaluation process)
+        logging.addLevelName(5, 'TRACE')
+        setattr(logging, 'TRACE', 5)
+
+        # Adding a logging method for the TRACE level
+        def log_trace(self, message, *args, **kws):
+            if self.isEnabledFor(5):
+                # Yes, logger takes its '*args' as 'args'.
+                self._log(5, message, args, **kws)
+
+        logging.Logger.trace = log_trace
+
         # Adding a new level ACTION for actions that are initiated by the program.
         logging.addLevelName(100, 'ACTION')
         setattr(logging, 'ACTION', 100)
@@ -59,12 +71,13 @@ def get_aif_logger(name: str):
                 self._log(100, message, args, **kws)
 
         logging.Logger.action = log_action
+
         __logger_initialized = True
 
     logger = logging.getLogger(name)
     if len(logger.handlers) == 0:
         logger.propagate = False
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.TRACE)
 
         # Create a formatter that is used by all handlers TODO: Convert to UTC?
         formatter = logging.Formatter(FORMAT_MSG, datefmt=FORMAT_DATE)

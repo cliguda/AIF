@@ -22,6 +22,7 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
+import talib
 import talib as ta
 
 import aif.common.logging as log
@@ -214,6 +215,23 @@ class SqueezingMomentumIndicator(Indicator):
         return None
 
 
+class MACD(Indicator):
+    """Adds the MACD histogram to price_data_df. Default window is 26."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
+        col_name = 'MACD_Hist'
+
+        fast_period = kwargs.get('fast_period', 12)
+        signal_period = kwargs.get('signal_period', 9)
+
+        res = ta.MACD(price_data_df['Close'], fastperiod=fast_period, slowperiod=window, signalperiod=signal_period)
+
+        price_data_df.loc[:, col_name] = res[2]
+
+        return None
+
+
 # Volume Indicators
 
 class VolumeRelativeToAverage(Indicator):
@@ -232,6 +250,23 @@ class VolumeRelativeToAverage(Indicator):
 
 # Volatility Indicators
 
+class ATRBands(Indicator):
+    """ATR Bands. Default window = 14."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> \
+            Optional[Union[str, list[str]]]:
+        mult_factor = kwargs.get('mult_factor', 3)
+        col_name_upper = f'ATR_Upper_{str(window)}'
+        col_name_lower = f'ATR_Lower_{str(window)}'
+
+        atr = talib.ATR(price_data_df['High'], price_data_df['Low'], price_data_df['Close'])
+
+        price_data_df.loc[:, col_name_upper] = price_data_df['Close'] + (mult_factor * atr)
+        price_data_df.loc[:, col_name_lower] = price_data_df['Close'] - (mult_factor * atr)
+
+        return [col_name_upper, col_name_lower]
+
 
 # Others indicators
 
@@ -241,6 +276,7 @@ class BollingerBands(Indicator):
     @classmethod
     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> \
             Optional[Union[str, list[str]]]:
+
         col_name_upper = f'BB_Upper_{str(window)}'
         col_name_lower = f'BB_Lower_{str(window)}'
 

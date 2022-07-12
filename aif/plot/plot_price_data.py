@@ -29,8 +29,8 @@ from aif.data_manangement.price_data import ENTER_TRADE_COLUMN, PriceData
 from aif.plot.layout import update_layout
 from aif.strategies import backtest
 from aif.strategies.strategy import Strategy
-from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.strategy_helper import get_exit_for_entry_signal
+from aif.strategies.strategy_trading_type import TradingType
 
 _MAX_INDICATORS = 3
 _MAX_OSCILLATORS = 3
@@ -98,7 +98,7 @@ class PlotPriceData:
         """Adds features, that are evaluated for all trading signals (by add_indicators_for_signal_evaluation)."""
         self.indicator_signal_evaluation = True
 
-    def plot(self, price_data: PriceData, max_leverage: int):
+    def plot(self, price_data: PriceData, max_leverage: int, price_data_indicator_analysis: Optional[PriceData] = None):
         """Plots everything for the gives price data."""
         price_data_df = price_data.get_price_data(convert=False)
 
@@ -122,8 +122,9 @@ class PlotPriceData:
         fig.show()
 
         if self.indicator_signal_evaluation:
-            # price_data_conv_df = price_data.get_price_data(convert=True)
-            self._plot_signal_eval_figure(price_data=price_data, max_leverage=max_leverage)
+            price_data_analysis = price_data_indicator_analysis if price_data_indicator_analysis is not None \
+                else price_data
+            self._plot_signal_eval_figure(price_data=price_data_analysis, max_leverage=max_leverage)
 
     def _setup_price_figure(self, asset_name: str, timeframe_name: str):
         """Setup the main plot for price data-"""
