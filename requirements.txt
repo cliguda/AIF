@@ -6,3 +6,12 @@ schedule~=1.1.0
 python-binance==1.0.15
 dynaconf~=3.1.7
 python-pushsafer~=1.0
+
+pandas~=1.4.2
+plotly~=5.7.0
+numpy~=1.21.6
+scikit-learn~=1.0.2
+numba~=0.55.1
+requests~=2.27.1
+ta~=0.10.1
+pytest~=6.2.5

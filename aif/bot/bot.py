@@ -158,7 +158,7 @@ class Bot:
             if order_status == OrderStatus.ACCEPTED:
                 self.strategy_manager.remove_exit_strategy(asset=price_data.asset, timeframe=price_data.timeframe)
             else:
-                logging.get_aif_logger(__name__).info(f'Could NOT place exit-order. Exit strategy still active.')
+                logging.get_aif_logger(__name__).warning(f'Could NOT place exit-order. Exit strategy still active.')
 
     def _apply_entry_strategies_for_price_data(self, price_data: PriceData) -> None:
         """Apply all strategies to price data and placing the best order (if one or more trading signals were found).

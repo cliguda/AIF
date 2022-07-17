@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-import aif.strategies.library.macd_ema as library_strategy
+import aif.strategies.library.stc_ema as library_strategy
 from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
@@ -45,14 +45,14 @@ Configurations:
 
 PARAM_CONTEXT = [
     Context(Asset.BTCUSD, Timeframe.HOURLY),
-    Context(Asset.ETHUSD, Timeframe.HOURLY),
-    Context(Asset.BNBUSD, Timeframe.HOURLY),
-    Context(Asset.XRPUSD, Timeframe.HOURLY),
-    Context(Asset.ADAUSD, Timeframe.HOURLY),
-    Context(Asset.SOLUSD, Timeframe.HOURLY),
+    # Context(Asset.ETHUSD, Timeframe.HOURLY),
+    # Context(Asset.BNBUSD, Timeframe.HOURLY),
+    # Context(Asset.XRPUSD, Timeframe.HOURLY),
+    # Context(Asset.ADAUSD, Timeframe.HOURLY),
+    # Context(Asset.SOLUSD, Timeframe.HOURLY),
 ]
 
-PARAM_STRATEGY = library_strategy.get_short_strategy_configuration
+PARAM_STRATEGY = library_strategy.get_long_strategy_configuration
 
 
 def get_performance(strategy_conf: StrategyConfiguration, context: Context,

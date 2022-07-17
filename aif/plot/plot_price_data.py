@@ -98,13 +98,14 @@ class PlotPriceData:
         """Adds features, that are evaluated for all trading signals (by add_indicators_for_signal_evaluation)."""
         self.indicator_signal_evaluation = True
 
-    def plot(self, price_data: PriceData, max_leverage: int, price_data_indicator_analysis: Optional[PriceData] = None):
+    def plot(self, price_data: PriceData, max_leverage: int, price_data_indicator_analysis: Optional[PriceData] = None,
+             ohlc_prefix: str = ''):
         """Plots everything for the gives price data."""
         price_data_df = price_data.get_price_data(convert=False)
 
         fig = self._setup_price_figure(asset_name=price_data.asset.name, timeframe_name=price_data.timeframe.name)
 
-        self._add_ohlc_to_fig(price_data_df, fig)
+        self._add_ohlc_to_fig(price_data_df, fig, ohlc_prefix)
 
         if self.mark_highs:
             self._add_marks(price_data_df, fig, name='High')
@@ -157,14 +158,14 @@ class PlotPriceData:
         return fig
 
     @staticmethod
-    def _add_ohlc_to_fig(price_data_df: pd.DataFrame, fig):
+    def _add_ohlc_to_fig(price_data_df: pd.DataFrame, fig, ohlc_prefix: str):
         # OHLC data
         fig.add_trace(go.Candlestick(x=price_data_df.index,
-                                     open=price_data_df['Open'],
-                                     high=price_data_df['High'],
-                                     low=price_data_df['Low'],
-                                     close=price_data_df['Close'],
-                                     name='OHLC',
+                                     open=price_data_df[f'{ohlc_prefix}Open'],
+                                     high=price_data_df[f'{ohlc_prefix}High'],
+                                     low=price_data_df[f'{ohlc_prefix}Low'],
+                                     close=price_data_df[f'{ohlc_prefix}Close'],
+                                     name=f'{ohlc_prefix}OHLC',
                                      line=dict(width=1),
                                      opacity=1,
                                      increasing={'fillcolor': '#24A06B', 'line_color': '#2EC886'},

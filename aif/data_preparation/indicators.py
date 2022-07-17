@@ -15,17 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import math
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-import talib
-import talib as ta
+import talib  # Classical Ta-Lib
+from ta.trend import STCIndicator  # Python based ta lib
 
-import aif.common.logging as log
+import aif.common.logging as logging
 from aif.data_manangement.price_data import PriceDataTimeframe
 from aif.data_preparation.indicator_config import IndicatorConfiguration
 
@@ -53,7 +52,7 @@ class Indicator(ABC):
         price_data_tf.add_indicator_configuration(
             IndicatorConfiguration(indicator=cls.__name__, window=window, args=kwargs))
 
-        log.get_aif_logger(__name__).debug(
+        logging.get_aif_logger(__name__).debug(
             f'Added indicator {cls.__name__} on timeframe {price_data_tf.timeframe} with {window=}, {kwargs=}')
         price_data_tf.update_max_window(window)
 
@@ -80,7 +79,7 @@ class EMA(Indicator):
     @classmethod
     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
         col_name = 'EMA_' + str(window)
-        price_data_df.loc[:, col_name] = ta.EMA(price_data_df['Close'], timeperiod=window)
+        price_data_df.loc[:, col_name] = talib.EMA(price_data_df['Close'], timeperiod=window)
         return col_name
 
 
@@ -104,7 +103,7 @@ class EMASlope(Indicator):
         col_name = f'EMA_{str(window)}_Slope'
 
         x = np.array(range(0, slope_window))
-        price_data_df.loc[:, '_EMA'] = ta.EMA(price_data_df['Close'], timeperiod=window)
+        price_data_df.loc[:, '_EMA'] = talib.EMA(price_data_df['Close'], timeperiod=window)
         price_data_df[col_name] = price_data_df['_EMA'].rolling(window=slope_window).apply(
             lambda gr: np.polyfit(x, gr, 1)[0], raw=True)
         price_data_df.drop(columns=['_EMA'], inplace=True)
@@ -118,7 +117,7 @@ class RSI(Indicator):
     @classmethod
     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
         col_name = f'RSI_{str(window)}'
-        price_data_df.loc[:, col_name] = ta.RSI(price_data_df['Close'], timeperiod=window)
+        price_data_df.loc[:, col_name] = talib.RSI(price_data_df['Close'], timeperiod=window)
 
         return None
 
@@ -130,8 +129,8 @@ class Stochastic(Indicator):
         col_name_k = f'Stochastic_K_{str(window)}'
         col_name_d = f'Stochastic_D_{str(window)}'
 
-        res = ta.STOCHF(price_data_df['High'], price_data_df['Low'], price_data_df['Close'], fastk_period=window,
-                        fastd_period=3, fastd_matype=0)
+        res = talib.STOCHF(price_data_df['High'], price_data_df['Low'], price_data_df['Close'], fastk_period=window,
+                           fastd_period=3, fastd_matype=0)
 
         price_data_df.loc[:, col_name_k] = res[0]
         price_data_df.loc[:, col_name_d] = res[1]
@@ -161,7 +160,7 @@ class SqueezingMomentumIndicator(Indicator):
         col_name = 'SQZ_MNT'
 
         # calculate Bollinger Bands
-        bb = ta.BBANDS(price_data_df['Close'], timeperiod=window, nbdevup=2, nbdevdn=2, matype=0)
+        bb = talib.BBANDS(price_data_df['Close'], timeperiod=window, nbdevup=2, nbdevdn=2, matype=0)
         price_data_df.loc[:, '_upper_BB'] = bb[0]
         price_data_df.loc[:, '_lower_BB'] = bb[2]
 
@@ -225,7 +224,7 @@ class MACD(Indicator):
         fast_period = kwargs.get('fast_period', 12)
         signal_period = kwargs.get('signal_period', 9)
 
-        res = ta.MACD(price_data_df['Close'], fastperiod=fast_period, slowperiod=window, signalperiod=signal_period)
+        res = talib.MACD(price_data_df['Close'], fastperiod=fast_period, slowperiod=window, signalperiod=signal_period)
 
         price_data_df.loc[:, col_name] = res[2]
 
@@ -276,11 +275,10 @@ class BollingerBands(Indicator):
     @classmethod
     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> \
             Optional[Union[str, list[str]]]:
-
         col_name_upper = f'BB_Upper_{str(window)}'
         col_name_lower = f'BB_Lower_{str(window)}'
 
-        bb = ta.BBANDS(price_data_df['Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+        bb = talib.BBANDS(price_data_df['Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
         price_data_df.loc[:, col_name_upper] = bb[0]
         price_data_df.loc[:, col_name_lower] = bb[2]
@@ -299,26 +297,29 @@ class LastLow(Indicator):
             Optional[Union[str, list[str]]]:
 
         n = kwargs.get('prev', 0)
+        low_column = kwargs.get('low_column', 'Low')
 
         if n == 0:
             col_name = 'Last_Low'
         else:
             col_name = f'Last_Low_Prev_{n}'
 
-        price_data_df['_lowest_low'] = price_data_df['Low'].rolling(window=window, center=True).min()
+        price_data_df['_lowest_low'] = price_data_df[low_column].rolling(window=window, center=True).min()
 
         indexer = pd.api.indexers.FixedForwardWindowIndexer(window_size=math.floor(window / 2))
-        price_data_df['_highest_low_left'] = price_data_df['Low'].rolling(window=math.floor(window / 2)).max()
-        price_data_df['_highest_low_right'] = price_data_df['Low'].rolling(window=indexer).max()
+        price_data_df['_highest_low_left'] = price_data_df[low_column].rolling(window=math.floor(window / 2)).max()
+        price_data_df['_highest_low_right'] = price_data_df[low_column].rolling(window=indexer).max()
 
-        price_data_df['_is_low_'] = (price_data_df['Low'] == price_data_df['_lowest_low']) & \
-                                    (price_data_df['Low'] * 1.005 < price_data_df['_highest_low_left']) & \
-                                    (price_data_df['Low'] * 1.005 < price_data_df['_highest_low_right'])
+        price_data_df['_is_low_'] = (price_data_df[low_column] == price_data_df['_lowest_low']) & \
+                                    (price_data_df[low_column] * 1.005 < price_data_df['_highest_low_left']) & \
+                                    (price_data_df[low_column] * 1.005 < price_data_df['_highest_low_right'])
 
-        price_data_df.loc[price_data_df['_is_low_'], col_name] = price_data_df.loc[price_data_df['_is_low_'], 'Low']
+        price_data_df.loc[price_data_df['_is_low_'], col_name] = price_data_df.loc[
+            price_data_df['_is_low_'], low_column]
         if n > 0:
             price_data_df.loc[price_data_df['_is_low_'], col_name] = \
                 price_data_df.loc[price_data_df['_is_low_'], col_name].shift(n)
+
         price_data_df.loc[:, col_name] = price_data_df[col_name].ffill()
 
         price_data_df.drop(columns=['_lowest_low', '_highest_low_left', '_highest_low_right', '_is_low_'], inplace=True)
@@ -334,26 +335,30 @@ class LastHigh(Indicator):
     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> \
             Optional[Union[str, list[str]]]:
         n = kwargs.get('prev', 0)
+        high_column = kwargs.get('high_column', 'High')
 
         if n == 0:
             col_name = 'Last_High'
         else:
             col_name = f'Last_High_Prev_{n}'
 
-        price_data_df['_highest_high'] = price_data_df['High'].rolling(window=window, center=True).max()
+        price_data_df['_highest_high'] = price_data_df[high_column].rolling(window=window, center=True).max()
 
         indexer = pd.api.indexers.FixedForwardWindowIndexer(window_size=math.floor(window / 2))
-        price_data_df['_lowest_high_left'] = price_data_df['High'].rolling(window=math.floor(window / 2)).min()
-        price_data_df['_lowest_high_right'] = price_data_df['High'].rolling(window=indexer).min()
+        price_data_df['_lowest_high_left'] = price_data_df[high_column].rolling(window=math.floor(window / 2)).min()
+        price_data_df['_lowest_high_right'] = price_data_df[high_column].rolling(window=indexer).min()
 
-        price_data_df['_is_high_'] = (price_data_df['High'] == price_data_df['_highest_high']) & \
-                                     (price_data_df['High'] * 0.995 > price_data_df['_lowest_high_left']) & \
-                                     (price_data_df['High'] * 0.995 > price_data_df['_lowest_high_right'])
+        price_data_df['_is_high_'] = (price_data_df[high_column] == price_data_df['_highest_high']) & \
+                                     (price_data_df[high_column] * 0.995 > price_data_df['_lowest_high_left']) & \
+                                     (price_data_df[high_column] * 0.995 > price_data_df['_lowest_high_right'])
 
-        price_data_df.loc[price_data_df['_is_high_'], col_name] = price_data_df.loc[price_data_df['_is_high_'], 'High']
+        price_data_df.loc[price_data_df['_is_high_'], col_name] = \
+            price_data_df.loc[price_data_df['_is_high_'], high_column]
+
         if n > 0:
             price_data_df.loc[price_data_df['_is_high_'], col_name] = \
                 price_data_df.loc[price_data_df['_is_high_'], col_name].shift(n)
+
         price_data_df.loc[:, col_name] = price_data_df[col_name].ffill()
 
         price_data_df.drop(columns=['_highest_high', '_lowest_high_left', '_lowest_high_right', '_is_high_'],
@@ -381,3 +386,18 @@ class HeikinAshi(Indicator):
         price_data_df.drop(columns=['_last_open', '_last_close'], inplace=True)
 
         return ['HA_Open', 'HA_High', 'HA_Low', 'HA_Close']
+
+
+class STC(Indicator):
+    """Adds the STC indicator. Default window is 50."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> None:
+        closing_col = kwargs.get('closing_col', 'Close')
+
+        col_name = f'STC_{str(window)}'
+
+        stc = STCIndicator(close=price_data_df[closing_col], window_slow=window)
+        price_data_df.loc[:, col_name] = stc.stc()
+
+        return None
