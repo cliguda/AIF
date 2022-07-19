@@ -88,6 +88,12 @@ class PortfolioManager:
     def place_order(self, order: OrderInformation) -> OrderStatus:
         if self.live_mode:
             try:
+                # Checking limit of open orders
+                open_positions = self.get_number_of_open_positions()
+                if open_positions >= settings.trading.max_open_positions:
+                    logging.get_aif_logger(__name__).warning(f'Max. number of open positions. Skipping order: {order}')
+                    return OrderStatus.MAX_OPEN_POSITIONS
+
                 logging.get_aif_logger(__name__).info(f'Placing order: {order}')
                 order_status = self.exchanges.get(order.asset).place_order(order)
 
@@ -119,3 +125,9 @@ class PortfolioManager:
         else:
             logging.get_aif_logger(__name__).info(f'Simulation mode - Exit Signal for {asset}')
             return OrderStatus.SIMULATION_ONLY
+
+    def get_number_of_open_positions(self) -> int:
+        positions = [p for asset in self.exchanges.keys() for p in self.get_active_positions(asset)]
+        open_positions = sum([p.position_size != 0 for p in positions])
+
+        return open_positions
