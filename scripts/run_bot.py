@@ -21,6 +21,7 @@ import aif.data_preparation.ta as ta
 import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
 import aif.strategies.library.heikin_ashi as heikin_ashi_strategy
 import aif.strategies.library.macd_ema as macd_ema_strategy
+import aif.strategies.library.rsi_stochastic_macd as rsi_stochastic_macd
 from aif.bot.bot import Bot
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
@@ -73,6 +74,8 @@ PARAM_STRATEGIES = [
     heikin_ashi_strategy.get_short_strategy_configuration,
     macd_ema_strategy.get_long_strategy_configuration,
     macd_ema_strategy.get_short_strategy_configuration,
+    rsi_stochastic_macd.get_long_strategy_configuration,
+    rsi_stochastic_macd.get_short_strategy_configuration,
 ]
 
 # Define aggregation levels
