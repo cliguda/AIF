@@ -27,7 +27,7 @@ from aif.strategies.trade_risk_control import TradeRiskControl
 
 def get_long_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: EMA + Stochastic Strategy
+    Name: Stochastic Strategy
     Description: Strategy based on 200 EMA and the Stochastic Indicator.
     The strategy is inspired by: https://www.youtube.com/watch?v=vLbLZWi_Ypc, but with modifications
     (Downtrend + RSI Filter).
@@ -36,10 +36,10 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Define all relevant indicators
     indicator_conf = {
         Timeframe.HOURLY: [
-            IndicatorConfiguration('EMA', 200, None),
             IndicatorConfiguration('Stochastic', 14, None),
             IndicatorConfiguration('RSI', 14, None),
             IndicatorConfiguration('LastLow', 10, None),
+            IndicatorConfiguration('VolumeRelativeToAverage', 50, None),
         ]
     }
     price_data_configurations = PriceDataConfiguration(indicator_conf)
@@ -52,14 +52,14 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     ]
 
     # Entry/Exit signals
-    entry_signal = '(EMA_200 > Close) & (Stochastic_K_14 > 25) & (Stochastic_K_14_Shift_1 < 20) & ' \
-                   '(Last_Low < 0.99 * Close) & (RSI_14 >= 30) & (RSI_14 <= 50)'
+    entry_signal = '(Stochastic_K_14 > 25) & (Stochastic_K_14_Shift_1 < 20) & ' \
+                   '(Last_Low < 0.99 * Close) & (RSI_14 >= 30) & (RSI_14 <= 50) & (Volume_Relative_50 > 1.3) '
     exit_signal = None
 
     # Risk control
     risk_control = TradeRiskControl(tp='Close + 2 * (Close - Last_Low)', sl='Last_Low')
 
-    s = Strategy(name='EMA + Stochastic Strategy',
+    s = Strategy(name='Stochastic Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -73,7 +73,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
 
 def get_short_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: EMA + Stochastic Strategy
+    Name: Stochastic Strategy
     Description: Strategy based on 200 EMA and the Stochastic Indicator.
     The strategy is inspired by: https://www.youtube.com/watch?v=vLbLZWi_Ypc, but with modifications
     (Downtrend + RSI Filter).
@@ -82,7 +82,6 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Define all relevant indicators
     indicator_conf = {
         Timeframe.HOURLY: [
-            IndicatorConfiguration('EMA', 200, None),
             IndicatorConfiguration('Stochastic', 14, None),
             IndicatorConfiguration('RSI', 14, None),
             IndicatorConfiguration('LastHigh', 10, None),
@@ -98,14 +97,14 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     ]
 
     # Entry/Exit signals
-    entry_signal = '(EMA_200 < Close) & (Stochastic_K_14 < 75) & (Stochastic_K_14_Shift_1 > 80) & ' \
-                   '(Last_High > 1.01 * Close)'
+    entry_signal = '(Stochastic_K_14 < 75) & (Stochastic_K_14_Shift_1 > 80) & ' \
+                   '(Last_High > 1.01 * Close) & (Last_High < 1.03 * Close)'
     exit_signal = None
 
     # Risk control
     risk_control = TradeRiskControl(tp='Close - 2 * (Last_High - Close)', sl='Last_High')
 
-    s = Strategy(name='EMA + Stochastic Strategy',
+    s = Strategy(name='Stochastic Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

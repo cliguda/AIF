@@ -53,7 +53,7 @@ class TradeRiskControl:
             tp_price = None
 
         if tp_price is not None:
-            return round(tp_price, 2)
+            return round(tp_price, 3)
         else:
             return tp_price
 
@@ -73,7 +73,7 @@ class TradeRiskControl:
             sl_price = None
 
         if sl_price is not None:
-            return round(sl_price, 2)
+            return round(sl_price, 3)
         else:
             return sl_price
 

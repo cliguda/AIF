@@ -84,6 +84,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
             IndicatorConfiguration('EMA', 100, None),
             IndicatorConfiguration('MACD', 26, None),
             IndicatorConfiguration('ATRBands', 14, None),
+            IndicatorConfiguration('VolumeRelativeToAverage', 50, None),
         ],
     }
     price_data_configurations = PriceDataConfiguration(indicator_conf)
@@ -98,7 +99,8 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     entry_signal = '((MACD_Hist / Close) < -0.0012) & ' \
                    '(MACD_Hist_Shift_1 > 0) & ' \
                    '(Close < EMA_100) & ' \
-                   '(ATR_Upper_14 > 1.01 * Close)'
+                   '(ATR_Upper_14 > 1.01 * Close) & ' \
+                   '(Volume_Relative_50 > 1.2)'
 
     exit_signal = None
 
