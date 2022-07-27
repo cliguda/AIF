@@ -168,7 +168,7 @@ def test_build_and_apply_tpsl(dp):
         ('model', KNeighborsClassifier(n_neighbors=1))
     ])
 
-    s = Strategy(name='TPSL KNN Classifier', trading_type=TradingType.LONG, preprocessor=[],
+    s = Strategy(name='TPSL_KNN_Classifier', trading_type=TradingType.LONG, preprocessor=[],
                  entry_signal=classifier, exit_signal=None, risk_control=risk_control,
                  convert_data_for_classifier=True,
                  prepare_classifier_data=partial(mark_tpsl_signals, tp_threshold=risk_control.tp,

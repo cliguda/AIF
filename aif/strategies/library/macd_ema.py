@@ -27,7 +27,7 @@ from aif.strategies.trade_risk_control import TradeRiskControl
 
 def get_long_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: MACD + EMA 60 Strategy
+    Name: MACD + EMA Strategy
     Description: The strategy is inspired by: https://www.youtube.com/watch?v=mC5Bmz8RMW8
     Note: Original was developed for 15m, therefore it needed some changes.
     """
@@ -59,7 +59,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close + 2 * (Close - ATR_Lower_14)', sl='ATR_Lower_14')
 
-    s = Strategy(name='MACD + EMA Strategy',
+    s = Strategy(name='MACD_+_EMA_Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -73,7 +73,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
 
 def get_short_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: MACD + EMA 60 Strategy
+    Name: MACD + EMA Strategy
     Description: The strategy is inspired by: https://www.youtube.com/watch?v=mC5Bmz8RMW8
     Note: Original was developed for 15m, therefore it needed some changes.
     """
@@ -107,7 +107,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close - 2 * (ATR_Upper_14 - Close)', sl='ATR_Upper_14')
 
-    s = Strategy(name='MACD + EMA Strategy',
+    s = Strategy(name='MACD_+_EMA_Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

@@ -16,9 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import sys
+
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
+import aif.strategies.library.stochastic_rsi as ema_stochastic_strategy
 import aif.strategies.library.heikin_ashi as heikin_ashi_strategy
 import aif.strategies.library.macd_ema as macd_ema_strategy
 import aif.strategies.library.rsi_stochastic_macd as rsi_stochastic_macd
@@ -30,6 +32,7 @@ from aif.data_manangement.definitions import Asset, Context, Timeframe
 from aif.data_manangement.price_data import PriceDataComplete
 from aif.data_preparation.indicator_config import PriceDataConfiguration
 from aif.strategies.strategy_manager import StrategyManager
+from aif.strategies.strategy_trading_type import TradingType
 
 """
 Main script to start the bot. By default the live mode is disabled (settings.toml: trading -> live_mode). If live mode 
@@ -119,10 +122,40 @@ def main():
             strategy = s().strategy
             sm.add_strategy(strategy=strategy, price_data=price_data)
 
+    # Setup exit strategies provided as command line arguments.
+    if len(sys.argv) >= 3 and sys.argv[1] == '-exit':
+        _add_exit_strategies(sm)
+
     # Run strategies every hour
     bot = Bot(price_data_list=price_data_all, strategy_manager=sm, dp=dp, pm=pm)
     logging.get_aif_logger(__name__).info('Status: Setup completed. Now starting the bot...')
     bot.run()
+
+
+def _add_exit_strategies(sm: StrategyManager):
+    logging.get_aif_logger(__name__).info('Status: Add exit strategies provided as command line arguments....')
+    arg = sys.argv[2]
+
+    for x in arg.split(sep=','):
+        asset = Asset[x.split(':')[0]]
+        timeframe = Timeframe[x.split(':')[1]]
+        strategy_name = x.split(':')[2]
+        trading_type = TradingType[x.split(':')[3]]
+
+        found_strategy = False
+        for strategy in sm.all_strategies.get(Context(asset=asset, timeframe=timeframe)):
+            # Search for correct strategy.
+
+            if strategy.name == strategy_name and strategy.trading_type == trading_type:
+                found_strategy = True
+                logging.get_aif_logger(__name__).debug(
+                    f'Add exit strategy for {asset.name} on {timeframe.name} for '
+                    f'strategy {strategy_name} ({trading_type.name}).')
+
+                sm.add_exit_strategy(strategy)
+        if not found_strategy:
+            logging.get_aif_logger(__name__).warning(f'No strategy {strategy_name} ({trading_type}) found for'
+                                                     f'{asset.name} on {timeframe.name}')
 
 
 if __name__ == "__main__":

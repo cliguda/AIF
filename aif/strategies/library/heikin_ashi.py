@@ -75,7 +75,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp=None, sl='Last_Low')
 
-    s = Strategy(name='Heikin Ashi Candle + EMA',
+    s = Strategy(name='Heikin_Ashi_Candle_+_EMA',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -137,7 +137,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp=None, sl='Last_High')
 
-    s = Strategy(name='Heikin Ashi Candle + EMA',
+    s = Strategy(name='Heikin_Ashi_Candle_+_EMA',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

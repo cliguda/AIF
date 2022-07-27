@@ -99,7 +99,7 @@ def get_svm_strategy_configuration(tp: float, sl: float, trading_type: TradingTy
 def _get_strategy_configuration(tp: float, sl: float, trading_type: TradingType, classifier: Classifier) -> Strategy:
     risk_control = TradeRiskControl(tp=tp, sl=sl)
 
-    s = Strategy(name='TPSL Classifier',
+    s = Strategy(name='TPSL_Classifier',
                  trading_type=trading_type,
                  preprocessor=[],
                  entry_signal=classifier,

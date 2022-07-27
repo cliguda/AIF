@@ -66,7 +66,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close + 2 * (Close - Last_Low)', sl='Last_Low')
 
-    s = Strategy(name='STC + EMA Strategy',
+    s = Strategy(name='STC_+_EMA_Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -119,7 +119,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close - 2 * (Last_High - Close)', sl='Last_High')
 
-    s = Strategy(name='STC + EMA Strategy',
+    s = Strategy(name='STC_+_EMA_Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

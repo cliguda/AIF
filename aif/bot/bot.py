@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
 
+import keyboard
 import schedule
 
 import aif.common.logging as logging
@@ -51,17 +52,33 @@ class Bot:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
 
-        logging.get_aif_logger(__name__).info(f'Starting bot with {number_of_strategies} strategies')
+        logging.get_aif_logger(__name__).info(f'Starting bot with {number_of_strategies} strategies.')
 
         schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
         schedule.every().day.at("02:15").do(self._update_data_job)
         schedule.every().day.at("02:30").do(self._reevaluate_strategies_job)
 
-        logging.get_aif_logger(__name__).info('Bot started. Start looping....')
-
+        logging.get_aif_logger(__name__).info('''Bot started. Now looping...(Press and hold 'q' to quit the bot).''')
         while True:
             schedule.run_pending()
+            if keyboard.is_pressed('q'):
+                self._quit_bot()
+                break
             time.sleep(1)
+
+    def _quit_bot(self) -> None:
+        logging.get_aif_logger(__name__).info('Quitting bot...')
+        exit_strategy_arg = ''
+        for context, strategy in self.strategy_manager.exit_strategies.items():
+            arg = f'{context.asset.name}:{context.timeframe.name}:{strategy.name}:{strategy.trading_type.name}'
+            if len(exit_strategy_arg) > 1:
+                exit_strategy_arg = f'{exit_strategy_arg},{arg}'
+            else:
+                exit_strategy_arg = arg
+
+        if len(exit_strategy_arg) > 0:
+            logging.get_aif_logger(__name__).info(f'Start bot with argument -exit {exit_strategy_arg} to add all '
+                                                  f'currently active exit strategies.')
 
     def _update_data_job(self) -> None:
         """The method updates all price data."""

@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as library_strategy
+import aif.strategies.library.rsi_stochastic_macd as library_strategy
 from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice

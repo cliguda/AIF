@@ -119,21 +119,44 @@ To understand the code the following main concepts are important:
 
 ## Where to start
 
+### Update data
 After installation, it is a good idea to get up-to-date historical data, by running run_update_db.py in the scripts/
 directory.
 
 To get a first understanding of the program, the debug logging can be useful. So switch log_console_level in the
 settings to debug.
 
+## Running experiments
 As a first test, run "run_experiment.py" in the scripts/ directory. It will load historical data for a given asset and
 evaluate the performance of a strategy. Other strategies from strategies/library can be tested or modified, to get a
 first understanding of defining and evaluating strategies. For a deeper understanding, use a debugger (e.g. from
-PyCharm) to go through the code.
+PyCharm) to go through the code.<br/>
 
+The script will generate an output like below. The backtest result is the result of the strategy for the whole dataset
+while the cross-validation result relates to the current performance as provided in the settings. PPS refers to the
+average performance per signal, while the total performance relates to the performance for all signals in the evaluation
+period.
+
+**Results:**<br/>
+BTCUSD on timeframe HOURLY - Backtesting result: Win-rate: 43.0% / PPS: 3.9% / Total Performance: 931.93%<br/>
+BTCUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 54.0% / PPS: 29.1% / Total Performance: 378.26%<br/>
+ETHUSD on timeframe HOURLY - Backtesting result: Win-rate: 46.0% / PPS: 11.5% / Total Performance: 2886.47%<br/>
+ETHUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 42.0% / PPS: 1.4% / Total Performance: 17.2%<br/>
+BNBUSD on timeframe HOURLY - Backtesting result: Win-rate: 45.0% / PPS: 8.2% / Total Performance: 935.66%<br/>
+BNBUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 47.0% / PPS: 11.2% / Total Performance: 191.26%<br/>
+XRPUSD on timeframe HOURLY - Backtesting result: Win-rate: 45.0% / PPS: 8.5% / Total Performance: 954.86%<br/>
+XRPUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 41.0% / PPS: -1.7% / Total Performance: -28.73%<br/>
+ADAUSD on timeframe HOURLY - Backtesting result: Win-rate: 39.0% / PPS: -4.1% / Total Performance: -511.13%<br/>
+ADAUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 71.0% / PPS: 61.7% / Total Performance: 1048.71%<br/>
+SOLUSD on timeframe HOURLY - Backtesting result: Win-rate: 53.0% / PPS: 26.7% / Total Performance: 2267.85%<br/>
+SOLUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 53.0% / PPS: 26.7% / Total Performance: 454.0%<br/>
+
+## Plotting
 The trades of the strategies can also be plotted by using the plot_data.py script. The script can also plot the
 distribution of indicators for winning and losing trade. This can be used to evaluate, if losing trades correlate with
 certain ranges of an indicator (e.g. more losing trades, when RSI < 30).
 
+## Running the bot
 By using the default configuration, the run_bot.py script uses publicly available data that do not require an API key.
 The script starts the bot and will apply all profitable strategies to all assets for generating trading signals on an
 hourly basis.

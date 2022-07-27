@@ -108,6 +108,9 @@ class Strategy:
                  risk_control: TradeRiskControl,
                  convert_data_for_classifier: bool,
                  prepare_classifier_data: Optional[Callable[[PriceData], pd.Series]] = None):
+        if ' ' in name or ':' in name:
+            raise ValueError('Invalid strategy name: Whitespaces and : are not allowed!')
+
         self.name = name
         self.trading_type = trading_type
         self.preprocessor = preprocessor
