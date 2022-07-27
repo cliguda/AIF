@@ -52,3 +52,46 @@ def test_command_shift():
     assert len(df['Y_Shift_2']) == len(df['Y_Shift_2'].dropna()) + 2
     assert np.isnan(df.iloc[0]['Y_Shift_2'])
     assert np.isnan(df.iloc[1]['Y_Shift_2'])
+
+
+def test_command_mark():
+    """Testing the MARK command."""
+    # Create data
+    df = pd.DataFrame({'X': [1, 2, 3, 4, 5, 6], 'Y': [2, 3, 2.5, 3, 6, 7]})
+
+    # Define rule
+    preprocessor = [
+        CommandDescription(Command.MARK, {'EXPR': 'Y < 3', 'NEW_COLUMN': 'Y_Signal', 'VALUE': 1}),
+        CommandDescription(Command.MARK, {'EXPR': 'Y > 6', 'NEW_COLUMN': 'Y_Signal', 'VALUE': -1}),
+    ]
+
+    new_columns: set = set([])
+    for cmd in preprocessor:
+        new_columns = new_columns.union(cmd.apply_command(df))
+
+    assert new_columns == {'Y_Signal'}
+
+    assert df['Y_Signal'][0] == 1.0
+    assert np.isnan(df['Y_Signal'][1])
+    assert df['Y_Signal'][2] == 1.0
+    assert np.isnan(df['Y_Signal'][3])
+    assert np.isnan(df['Y_Signal'][4])
+    assert df['Y_Signal'][5] == -1
+
+
+def test_command_ffill():
+    """Testing the FFILL command."""
+    # Create data
+    df = pd.DataFrame({'X': [1, 2, 3, 4, 5, 6], 'Y': [2, np.nan, np.nan, 5, 6, np.nan]})
+
+    # Define rule
+    preprocessor = [
+        CommandDescription(Command.FFILL, {'COLUMN': 'Y'}),
+    ]
+
+    new_columns = []
+    for cmd in preprocessor:
+        new_columns.extend(cmd.apply_command(df))
+
+    assert new_columns == []
+    assert all(df['Y'].dropna() == [2, 2, 2, 5, 6, 6])

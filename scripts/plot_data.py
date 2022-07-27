@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
+import aif.strategies.library.stc_ema as library_strategy
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
 from aif.common.ml.price_data_split import PriceDataSplit
@@ -38,10 +38,10 @@ browser.
 
 PARAM_ASSET = Asset.BTCUSD
 PARAM_TIMEFRAME = Timeframe.HOURLY
-PARAM_STRATEGY = ema_stochastic_strategy.get_long_strategy_configuration    # NOTE: WITHOUT (), it's just the function!
+PARAM_STRATEGY = library_strategy.get_long_strategy_configuration    # NOTE: WITHOUT (), it's just the function!
 
 PARAM_INDICATORS_TO_PLOT = ['EMA_200']      # E.G. EMA, everything that can be plotted with the OHLC data
-PARAM_OSCILLATORS_TO_PLOT = []              # E.G. RSI, everything that should be plotted below the OHLC data.
+PARAM_OSCILLATORS_TO_PLOT = ['STC_50']              # E.G. RSI, everything that should be plotted below the OHLC data.
 
 PARAM_MARK_HIGH_LOWS = False                # Marking local highs and lows. NOTE: Takes a time....
 
@@ -58,11 +58,16 @@ def main():
 
     dp = DataProvider(initialize=False)
 
+    # Get asset information first
+    pm = PortfolioManager()
+    asset_information = pm.get_asset_information(asset=PARAM_ASSET)
+
     # Get data
     price_data_tf = dp.get_historical_data(PARAM_ASSET, PARAM_TIMEFRAME)
     price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=[Timeframe.FOURHOURLY,
                                                                                       Timeframe.DAILY,
-                                                                                      Timeframe.WEEKLY])
+                                                                                      Timeframe.WEEKLY],
+                                                         asset_information=asset_information)
     # Prepare
     strategy_conf: StrategyConfiguration = PARAM_STRATEGY()
 
@@ -73,12 +78,8 @@ def main():
 
     ta.add_indicators(price_data, price_data_conf.configurations)
 
-    # Get max leverage for asset
-    pm = PortfolioManager()
-    asset_information = pm.get_asset_information(asset=price_data.asset)
-
     strategy = strategy_conf.strategy
-    strategy.initialize(price_data=price_data, max_leverage=asset_information.max_leverage, skip_fitting=True)
+    strategy.initialize(price_data=price_data, skip_fitting=True)
 
     # Filter just current data for plotting
     cv = PriceDataSplit(timeframe=PARAM_TIMEFRAME)
@@ -103,7 +104,7 @@ def main():
     if PARAM_EVAL_INDICATORS_FOR_SIGNAL:
         ppd.add_indicators_for_signal_evaluation()
 
-    ppd.plot(price_data_current, max_leverage=asset_information.max_leverage)
+    ppd.plot(price_data_current, max_leverage=asset_information.max_leverage, price_data_indicator_analysis=price_data)
 
 
 if __name__ == '__main__':

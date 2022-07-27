@@ -24,6 +24,7 @@ from typing import Callable, Optional, Union
 import pandas as pd
 from pandas import DataFrame
 
+from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.common import logging as logging
 from aif.data_manangement.definitions import Asset, Context
 from aif.data_manangement.price_data import ENTER_TRADE_COLUMN, EXIT_TRADE_COLUMN, PriceData
@@ -80,17 +81,26 @@ class StrategyPerformance:
     pps: float
     performance_detailed: list[float]
 
+    def __str__(self):
+        x = [str(round(p * 100, 2)) + '%' for p in self.performance_detailed]
+
+        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Total Performance: ' \
+            f'{round(sum(self.performance_detailed) * 100, 2)}%'
+
+        return s
+
     def __repr__(self):
         x = [str(round(p * 100, 2)) + '%' for p in self.performance_detailed]
         performance_per_fold = ' / '.join(x)
-        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Performance per fold: ' \
-            f'{performance_per_fold}'
+        s = f'Win-rate: {round(self.win_rate * 100, 2)}% / PPS: {round(self.pps * 100, 2)}% / Total Performance: ' \
+            f'{round(sum(self.performance_detailed) * 100, 2)}% / Performance per fold: {performance_per_fold}'
 
         return s
 
 
 class Strategy:
     """The main Strategy class (see library for some examples)."""
+
     def __init__(self, name: str, trading_type: TradingType,
                  preprocessor: list[CommandDescription],
                  entry_signal: Union[str, Classifier],
@@ -98,6 +108,9 @@ class Strategy:
                  risk_control: TradeRiskControl,
                  convert_data_for_classifier: bool,
                  prepare_classifier_data: Optional[Callable[[PriceData], pd.Series]] = None):
+        if ' ' in name or ':' in name:
+            raise ValueError('Invalid strategy name: Whitespaces and : are not allowed!')
+
         self.name = name
         self.trading_type = trading_type
         self.preprocessor = preprocessor
@@ -107,16 +120,15 @@ class Strategy:
         self.convert_data_for_classifier = convert_data_for_classifier
         self.prepare_classifier_data = prepare_classifier_data
 
-        self.init_for_context = None
-        self.max_leverage = None
-        self.strategy_performance = None
+        self.init_for_context: Optional[Context] = None
 
-    def initialize(self, price_data: PriceData, max_leverage: int, skip_fitting: bool = False,
+        self.strategy_performance: Optional[StrategyPerformance] = None
+
+    def initialize(self, price_data: PriceData, skip_fitting: bool = False,
                    classifier_parameters: Optional[dict] = None) -> None:
         """Before a strategy can be applied, the strategy must be initialized for a certain PriceData. For some tests
         and experiments the fitting is not always necessary and can be skipped."""
-        self.init_for_context = Context(asset=price_data.asset, timeframe=price_data.timeframe)
-        self.max_leverage = max_leverage
+        self.init_for_context = price_data.context
 
         """If the strategy contains a classifier, the classifier needs to be trained."""
         if skip_fitting:
@@ -166,7 +178,7 @@ class Strategy:
             tp_price = self.risk_control.get_tp_price(price_data_df, self.trading_type)
             sl_price = self.risk_control.get_sl_price(price_data_df, self.trading_type)
             leverage = self.risk_control.get_leverage_from_data(price_data_df, self.trading_type,
-                                                                max_leverage=self.max_leverage)
+                                                                max_leverage=price_data.asset_information.max_leverage)
 
             order_information = OrderInformation(from_strategy=self, asset=price_data.asset,
                                                  trading_type=self.trading_type,

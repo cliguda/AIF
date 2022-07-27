@@ -26,7 +26,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from aif import settings
+from aif.common.config import settings
 from aif.common.ml.weighted_distance import WeightedDistance
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Asset, Timeframe
@@ -34,8 +34,8 @@ from aif.data_manangement.price_data import ENTER_TRADE_COLUMN, EXIT_TRADE_COLUM
 from aif.data_preparation import ta
 from aif.strategies import backtest
 from aif.strategies.library.tpsl_classifier_preperation import mark_tpsl_signals
-from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.strategy import Strategy, StrategyPerformance
+from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.trade_risk_control import TradeRiskControl
 
 
@@ -69,7 +69,7 @@ def test_get_data_with_signals():
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='Close > 1050',
                         exit_signal='Close < 1020', risk_control=risk_control, convert_data_for_classifier=False)
 
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
     price_data_df = strategy._get_data_with_signals(price_data)
 
     assert all(price_data_df[ENTER_TRADE_COLUMN] == [False, True, False, True, False, False, True, False])
@@ -77,6 +77,8 @@ def test_get_data_with_signals():
 
 
 def test_apply_strategy():
+    settings.trading.default_max_leverage = 50
+    settings.trading.default_fees = 0.0
     settings.trading.leverage_reduction = 0.1
     df = pd.DataFrame(
         data={
@@ -103,7 +105,7 @@ def test_apply_strategy():
         # Strategy was not initialized
         strategy.apply_entry_strategy(price_data)
 
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
     # Set pseudo performance, because its not relevant
     strategy.set_performance(StrategyPerformance(win_rate=1.0, pps=1.0, performance_detailed=[]))
 
@@ -135,7 +137,8 @@ def test_build_and_apply_tpsl(dp):
     filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
     price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
     price_data_tf.price_data_df = price_data_tf.price_data_df.iloc[:10000, :]
-    price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=[Timeframe.DAILY, Timeframe.WEEKLY])
+    price_data = PriceDataComplete.create_from_timeframe(price_data_tf,
+                                                         aggregations=[Timeframe.DAILY, Timeframe.WEEKLY])
 
     indicator_conf = {
         Timeframe.HOURLY: [
@@ -165,22 +168,23 @@ def test_build_and_apply_tpsl(dp):
         ('model', KNeighborsClassifier(n_neighbors=1))
     ])
 
-    s = Strategy(name='TPSL KNN Classifier', trading_type=TradingType.LONG, preprocessor=[],
+    s = Strategy(name='TPSL_KNN_Classifier', trading_type=TradingType.LONG, preprocessor=[],
                  entry_signal=classifier, exit_signal=None, risk_control=risk_control,
                  convert_data_for_classifier=True,
                  prepare_classifier_data=partial(mark_tpsl_signals, tp_threshold=risk_control.tp,
                                                  sl_threshold=risk_control.sl, trading_type=TradingType.LONG))
 
     wd = WeightedDistance(weights=np.ones(len(price_data.get_price_data(convert=True).columns)))
-    s.initialize(price_data=price_data, max_leverage=100,
-                 classifier_parameters={'model__metric': wd})
-    classifier_performance = backtest.evaluate_performance(strategy=s, price_data=price_data, fees_per_trade=0.0)
+    s.initialize(price_data=price_data, classifier_parameters={'model__metric': wd})
+
+    classifier_performance = backtest.evaluate_performance(strategy=s, price_data=price_data)
     s.set_performance(strategy_performance=classifier_performance)
 
     # Create data for testing
     price_data_t1_df = price_data.get_price_data_for_timeframe(Timeframe.HOURLY).get_price_data_df()
     price_data_t1_df = price_data_t1_df.loc[:'2016-03-05 15:00', :]
-    price_data_t1 = PriceDataComplete(price_data_df=price_data_t1_df, asset=price_data.asset, timeframe=price_data.timeframe,
+    price_data_t1 = PriceDataComplete(price_data_df=price_data_t1_df, asset=price_data.asset,
+                                      timeframe=price_data.timeframe,
                                       aggregations=[Timeframe.DAILY, Timeframe.WEEKLY])
     ta.add_indicators(price_data_t1, indicator_conf)
 

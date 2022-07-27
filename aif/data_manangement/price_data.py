@@ -25,7 +25,10 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 
-from aif.data_manangement.definitions import Asset, Timeframe
+import aif.common.logging as logging
+from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
+from aif.common.config import settings
+from aif.data_manangement.definitions import Asset, Context, Timeframe
 from aif.data_preparation.indicator_config import IndicatorConfiguration
 
 OHLCV_COLUMNS = ['Open', 'High', 'Low', 'Close', 'Volume']
@@ -42,11 +45,13 @@ def _convert_to_relative(price_data_df: pd.DataFrame, column: str) -> None:
 
 class PriceDataException(Exception):
     """A PriceDataException should be raised, if the overall status of PriceData/PriceDataTimeframe/... is invalid."""
+
     def __init__(self, msg):
         self.msg = msg
 
     def __repr__(self):
         return self.msg
+
 
 # Classes to abstract from a DataFrame
 
@@ -136,14 +141,20 @@ class PriceData(ABC):
     defined by the method get_price_data. The context (asset/base timeframe) as well as some meta information need to
     be available as well."""
 
-    def __init__(self, asset: Asset, timeframe: Timeframe, aggregations: list[Timeframe] = None):
+    def __init__(self, asset: Asset, timeframe: Timeframe, aggregations: list[Timeframe] = None,
+                 asset_information: Optional[ExchangeAssetInformation] = None):
         self.asset = asset
         self.timeframe = timeframe
 
-        if aggregations is None:
-            self.aggregations = []
+        self.aggregations = aggregations if aggregations is not None else []
+
+        if asset_information is not None:
+            self.asset_information = asset_information
         else:
-            self.aggregations = aggregations
+            logging.get_aif_logger(__name__).info(
+                f'Created PriceData for {self.context} with default asset information (Only for testing!).')
+            self.asset_information = ExchangeAssetInformation(max_leverage=settings.trading.default_max_leverage,
+                                                              fees_market_order=settings.trading.default_fees)
 
     @abstractmethod
     def get_price_data(self, convert: bool) -> pd.DataFrame:
@@ -157,14 +168,19 @@ class PriceData(ABC):
     def get_lookback_window(self) -> int:
         pass
 
+    @property
+    def context(self) -> Context:
+        return Context(asset=self.asset, timeframe=self.timeframe)
+
 
 class PriceDataComplete(PriceData):
     """This class ist used to construct a PriceData object. It holds all information including the complete raw data
     for each timeframe."""
 
     def __init__(self, price_data_df: pd.DataFrame, asset: Asset, timeframe: Timeframe,
-                 aggregations: list[Timeframe] = None):
-        super().__init__(asset=asset, timeframe=timeframe, aggregations=aggregations)
+                 aggregations: list[Timeframe] = None, asset_information: Optional[ExchangeAssetInformation] = None):
+        super().__init__(asset=asset, timeframe=timeframe, aggregations=aggregations,
+                         asset_information=asset_information)
 
         if not all([c in price_data_df.columns for c in OHLCV_COLUMNS]):
             raise PriceDataException("Invalid price data. Missing main columns.")
@@ -175,7 +191,8 @@ class PriceDataComplete(PriceData):
         }
         for tf in self.aggregations:
             self._price_data[tf] = PriceDataTimeframe(PriceDataComplete._aggregate_to_timeframe(price_data_df_copy,
-                                                                                                timeframe=tf), asset, tf)
+                                                                                                timeframe=tf), asset,
+                                                      tf)
 
         # Adjust aggregated timeframes, so that they all have the same start date
         if len(self.aggregations) > 0:
@@ -197,9 +214,10 @@ class PriceDataComplete(PriceData):
 
     @classmethod
     def create_from_timeframe(cls, price_data_tf: PriceDataTimeframe,
-                              aggregations: list[Timeframe] = None) -> PriceDataComplete:
+                              aggregations: list[Timeframe] = None,
+                              asset_information: Optional[ExchangeAssetInformation] = None) -> PriceDataComplete:
         return cls(price_data_df=price_data_tf.price_data_df, asset=price_data_tf.asset,
-                   timeframe=price_data_tf.timeframe, aggregations=aggregations)
+                   timeframe=price_data_tf.timeframe, aggregations=aggregations, asset_information=asset_information)
 
     def get_indicator_configuration(self) -> dict[Timeframe, list[IndicatorConfiguration]]:
         """Return the configuration of indicators on the different timeframes."""
@@ -342,7 +360,8 @@ class PriceDataMirror(PriceData):
     def __init__(self, price_data: PriceData, idx_filter: Optional[np.ndarray] = None):
         """The PriceDataMirror is constructed from an existing PriceData object and the idx_filter can be used,
         to filter the data for cross_validation or other tasks."""
-        super().__init__(asset=price_data.asset, timeframe=price_data.timeframe, aggregations=price_data.aggregations)
+        super().__init__(asset=price_data.asset, timeframe=price_data.timeframe, aggregations=price_data.aggregations,
+                         asset_information=price_data.asset_information)
 
         self.price_data_df_unconverted = price_data.get_price_data(convert=False)
         self.price_data_df_converted = price_data.get_price_data(convert=True)

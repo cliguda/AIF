@@ -32,8 +32,15 @@ class Command(Enum):
             creates a new column EMA_20_SHIFT_1 were each row contains the previous value of the EMA_20. Shifting
             the EMA_20 and the column Close allows to check, if the previous EMA_20 was below the closing price and
             the current EMA_20 is above the closing price. See the strategies in library for more examples)
+    MARK:   The MARK command can be used, to mark certain signals, before the strategy is applied. E.g. entries
+            with and RSI < 30 can be marked with 1 and entries with RSI > 70 can be marked with -1. Afterwards the
+            FFILL COMMAND can be used, to propagate the marks. Thereby the strategy can check, if a signal is appearing
+            after the RSI was below 30.
+    FFILL:  Forward propagate for all NA values in the given column. Normally used after marking signals with MARK.
     """
     SHIFT = "SHIFT"
+    MARK = "MARK"
+    FFILL = "FFILL"
 
 
 @dataclass
@@ -56,6 +63,21 @@ class CommandDescription:
 
             df.loc[:, new_column_name] = df[column_name].shift(int(intervals))
             new_columns.append(new_column_name)
+        elif self.command == Command.MARK:
+            expression = self.args.get('EXPR')
+            new_column_name = self.args.get('NEW_COLUMN')
+            value = self.args.get('VALUE')
+
+            logging.get_aif_logger(__name__).debug(f'Mark {expression} with {value} (-> {new_column_name}).')
+
+            df.loc[df.eval(expression), new_column_name] = value
+            new_columns.append(new_column_name)
+        elif self.command == Command.FFILL:
+            column = self.args.get('COLUMN')
+
+            logging.get_aif_logger(__name__).debug(f'FFILL {column}')
+
+            df.loc[:, column] = df[column].ffill()
         else:
             raise ValueError(f'Cannot apply invalid command: {self.command.name}')
 

@@ -17,7 +17,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import pytest
+import copy
 
+from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.common.config import settings
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Asset, Context, Timeframe
@@ -44,62 +46,57 @@ def test_strategy_manager(dp):
     price_data = PriceDataComplete.create_from_timeframe(price_data_tf)
 
     sm = StrategyManager()
+    ps1 = _get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
+                               performance=StrategyPerformance(win_rate=0.1, pps=0.1, performance_detailed=[]))
+    sm.add_strategy(strategy=ps1, price_data=price_data, strategy_performance=ps1.strategy_performance)
 
-    sm.add_entry_strategy(_get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
-                                               performance=StrategyPerformance(win_rate=0.1, pps=0.1,
-                                                                               performance_detailed=[])),
-                          asset=price_data.asset, timeframe=price_data.timeframe)
+    ps2 = _get_pseudo_strategy(name='Pseudo-2', price_data=price_data,
+                               performance=StrategyPerformance(win_rate=0.1, pps=0.2, performance_detailed=[]))
+    sm.add_strategy(strategy=ps2, price_data=price_data, strategy_performance=ps2.strategy_performance)
 
-    pseudo_strategy_2 = _get_pseudo_strategy(name='Pseudo-2', price_data=price_data,
-                                             performance=StrategyPerformance(win_rate=0.1, pps=0.2,
-                                                                             performance_detailed=[]))
-    sm.add_entry_strategy(pseudo_strategy_2, asset=price_data.asset, timeframe=price_data.timeframe)
+    ps3 = _get_pseudo_strategy(name='Pseudo-3', price_data=price_data,
+                               performance=StrategyPerformance(win_rate=0.1, pps=0.25, performance_detailed=[]),
+                               signal='False')
+    sm.add_strategy(strategy=ps3, price_data=price_data, strategy_performance=ps3.strategy_performance)
 
-    sm.add_entry_strategy(_get_pseudo_strategy(name='Pseudo-3', price_data=price_data,
-                                               performance=StrategyPerformance(win_rate=0.1, pps=0.25,
-                                                                               performance_detailed=[]),
-                                               signal='False'),
-                          asset=price_data.asset, timeframe=price_data.timeframe)
+    ps4 = _get_pseudo_strategy(name='Pseudo-4', price_data=price_data,
+                               performance=StrategyPerformance(win_rate=0.1, pps=0.15, performance_detailed=[]))
+    sm.add_strategy(strategy=ps4, price_data=price_data, strategy_performance=ps4.strategy_performance)
 
-    sm.add_entry_strategy(_get_pseudo_strategy(name='Pseudo-4', price_data=price_data,
-                                               performance=StrategyPerformance(win_rate=0.1, pps=0.15,
-                                                                               performance_detailed=[])),
-                          asset=price_data.asset, timeframe=price_data.timeframe)
+    price_data_eth = copy.deepcopy(price_data)
+    price_data_eth.asset = Asset.ETHUSD
+    ps4b = _get_pseudo_strategy(name='Pseudo-4b', price_data=price_data_eth,
+                                performance=StrategyPerformance(win_rate=0.1, pps=0.15, performance_detailed=[]))
 
-    sm.add_entry_strategy(_get_pseudo_strategy(name='Pseudo-4b', price_data=price_data,
-                                               performance=StrategyPerformance(win_rate=0.1, pps=0.15,
-                                                                               performance_detailed=[])),
-                          asset=Asset.ETHUSD, timeframe=price_data.timeframe)
+    sm.add_strategy(strategy=ps4b, price_data=price_data_eth, strategy_performance=ps4b.strategy_performance)
 
     # Apply strategies for price data
     s = sm.apply(price_data)
 
     assert s is not None
     assert s.pps == 0.2
-    assert s.from_strategy == pseudo_strategy_2
+    assert s.from_strategy == ps2
 
     # Check for correct number of strategies per Context
-    assert len(sm.strategies[Context(asset=price_data.asset, timeframe=price_data.timeframe)]) == 4
-    assert len(sm.strategies[Context(asset=Asset.ETHUSD, timeframe=price_data.timeframe)]) == 1
+    assert len(sm.current_strategies[Context(asset=price_data.asset, timeframe=price_data.timeframe)]) == 4
+    assert len(sm.current_strategies[Context(asset=Asset.ETHUSD, timeframe=price_data.timeframe)]) == 1
 
     # Testing rejection winrate
     settings.strategies.threshold_strategy_winrate = 0.5
     sm = StrategyManager()
 
     s = _get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
-                             performance=StrategyPerformance(win_rate=0.1, pps=0.1,
-                                                             performance_detailed=[]))
+                             performance=StrategyPerformance(win_rate=0.1, pps=0.1, performance_detailed=[]))
 
-    assert not sm.add_entry_strategy(s, asset=price_data.asset, timeframe=price_data.timeframe)
+    assert not sm.add_strategy(s, price_data=price_data, strategy_performance=s.strategy_performance)
 
     # Testing rejection pps
     settings.strategies.threshold_strategy_winrate = 0.0
     settings.strategies.threshold_strategy_pps = 0.5
 
     s = _get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
-                             performance=StrategyPerformance(win_rate=0.1, pps=0.1,
-                                                             performance_detailed=[]))
-    assert not sm.add_entry_strategy(s, asset=price_data.asset, timeframe=price_data.timeframe)
+                             performance=StrategyPerformance(win_rate=0.1, pps=0.1, performance_detailed=[]))
+    assert not sm.add_strategy(s, price_data=price_data, strategy_performance=s.strategy_performance)
 
     # Testing negative fold
     settings.strategies.threshold_strategy_winrate = 0.0
@@ -109,13 +106,13 @@ def test_strategy_manager(dp):
     s = _get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
                              performance=StrategyPerformance(win_rate=0.1, pps=0.1,
                                                              performance_detailed=[0.3, -0.1, -4.0]))
-    assert not sm.add_entry_strategy(s, asset=price_data.asset, timeframe=price_data.timeframe)
+    assert not sm.add_strategy(s, price_data=price_data, strategy_performance=s.strategy_performance)
 
     # Last test to add strategy again
     s = _get_pseudo_strategy(name='Pseudo-1', price_data=price_data,
                              performance=StrategyPerformance(win_rate=0.1, pps=0.1,
                                                              performance_detailed=[0.3, -0.1, 4.0]))
-    assert sm.add_entry_strategy(s, asset=price_data.asset, timeframe=price_data.timeframe)
+    assert sm.add_strategy(s, price_data=price_data, strategy_performance=s.strategy_performance)
 
 
 def _get_pseudo_strategy(name: str, price_data: PriceData, performance: StrategyPerformance,
@@ -129,7 +126,8 @@ def _get_pseudo_strategy(name: str, price_data: PriceData, performance: Strategy
                  convert_data_for_classifier=False
                  )
 
-    s.initialize(price_data=price_data, max_leverage=1)
+    price_data.asset_information = ExchangeAssetInformation(max_leverage=1, fees_market_order=0.0)
+    s.initialize(price_data=price_data)
     s.set_performance(performance)
 
     return s

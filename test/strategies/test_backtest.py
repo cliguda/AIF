@@ -21,7 +21,8 @@ from datetime import datetime
 import pandas as pd
 
 import aif.strategies.backtest as backtest
-from aif import settings
+from aif.common.config import settings
+from aif.bot.order_management.portfolio_information import ExchangeAssetInformation
 from aif.data_manangement.definitions import Asset, Timeframe
 from aif.data_manangement.price_data import PriceDataComplete
 from aif.strategies.strategy import Strategy
@@ -30,6 +31,8 @@ from aif.strategies.trade_risk_control import TradeRiskControl
 
 
 def test_get_profit():
+    settings.trading.default_max_leverage = 20
+    settings.trading.default_fees = 0.0
     settings.trading.leverage_reduction = 0.1
 
     df = pd.DataFrame(
@@ -53,8 +56,8 @@ def test_get_profit():
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='Close > 1050',
                         exit_signal='Close < 1020', risk_control=risk_control, convert_data_for_classifier=False)
 
-    strategy.initialize(price_data=price_data, max_leverage=20)
-    classifier_performance = backtest.evaluate_performance(strategy=strategy, price_data=price_data, fees_per_trade=0.0)
+    strategy.initialize(price_data=price_data)
+    classifier_performance = backtest.evaluate_performance(strategy=strategy, price_data=price_data)
 
     adjusted_leverage = 10 * (1 - 0.1)
     assert len(classifier_performance.performance_detailed) == 2
@@ -75,22 +78,26 @@ def test__get_profit_for_signal():
                       )
 
     price_data = PriceDataComplete(price_data_df=df, timeframe=Timeframe.DAILY, asset=Asset.BTCUSD, aggregations=[])
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
     price_data_df = strategy._get_data_with_signals(price_data)
 
     settings.trading.leverage_reduction = 0.1
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage)
     assert abs(pl[0] - 0.54) < 0.001
 
     # Short
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
     price_data_df = strategy._get_data_with_signals(price_data)
 
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage)
     assert abs(pl[0] - -0.54) < 0.001
 
     """Profit by TP hit"""
@@ -98,7 +105,7 @@ def test__get_profit_for_signal():
     risk_control = TradeRiskControl(tp=0.07, sl=0.1)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     df = pd.DataFrame(data=[[900, 1100, 850, 1000, 0], [1000, 1080, 960, 1060, 0]],
                       columns=['Open', 'High', 'Low', 'Close', 'Volume'],
@@ -109,19 +116,25 @@ def test__get_profit_for_signal():
     price_data_df = strategy._get_data_with_signals(price_data)
 
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage
+                                         )
     assert abs(pl[0] - 0.63) < 0.001  # TP is hit, because High > 1070
 
     # Short
     risk_control = TradeRiskControl(tp=0.03, sl=0.1)
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     price_data_df = strategy._get_data_with_signals(price_data)
 
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage
+                                         )
     assert abs(pl[0] - 0.27) < 0.001
 
     """Profit by SL hit"""
@@ -129,7 +142,7 @@ def test__get_profit_for_signal():
     risk_control = TradeRiskControl(tp=0.07, sl=0.1)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
 
     df = pd.DataFrame(data=[[900, 1100, 850, 1000, 0], [1000, 1080, 890, 1060, 0]],
                       columns=['Open', 'High', 'Low', 'Close', 'Volume'],
@@ -140,18 +153,24 @@ def test__get_profit_for_signal():
     price_data_df = strategy._get_data_with_signals(price_data)
 
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage
+                                         )
     assert abs(pl[0] - -0.9) < 0.001
 
     # Short
     risk_control = TradeRiskControl(tp=0.03, sl=0.1)
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
-    strategy.initialize(price_data=price_data, max_leverage=50)
+    strategy.initialize(price_data=price_data)
     price_data_df = strategy._get_data_with_signals(price_data)
 
     pl = backtest._get_profit_for_signal(strategy=strategy, price_data_df=price_data_df,
-                                         idx=datetime.fromisoformat('2021-01-01'), max_leverage=20, fees_per_trade=0.0)
+                                         idx=datetime.fromisoformat('2021-01-01'),
+                                         fees_per_trade=settings.trading.default_fees,
+                                         max_leverage=settings.trading.default_max_leverage
+                                         )
     assert abs(pl[0] - 0.27) < 0.001
 
 

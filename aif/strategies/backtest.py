@@ -31,16 +31,17 @@ from aif.strategies.strategy_helper import get_exit_for_entry_signal
 from aif.strategies.strategy_trading_type import TradingType
 
 
-def cross_validate_strategy(strategy: Strategy, price_data: PriceData, max_leverage: int,
-                            fees_per_trade: float, classifier_parameters: Optional[dict] = None) -> StrategyPerformance:
+def cross_validate_strategy(strategy: Strategy, price_data: PriceData,
+                            classifier_parameters: Optional[dict] = None) -> StrategyPerformance:
     """This method is for classical cross validation of a strategy. Thereby the settings cv_folds_testing and
-    cv_fold_size_x_testing are used, and the type of cross validation ist implemented in PriceDataSplit."""
+    cv_fold_size_x_testing are used, and the type of cross validation ist implemented in PriceDataSplit.
+    Note: strategy has not to be initialized and will be initialized for every fold (therefore we provide the asset
+    information separate. """
     price_data_df = price_data.get_price_data(convert=False)  # We just need the index for splitting.
     cv = PriceDataSplit(timeframe=price_data.timeframe, validation_phase=False)
 
     performance_per_fold_detailed = []
-    logging.get_aif_logger(__name__).debug(f'Start cross-validation with max. leverage of {max_leverage} and '
-                                           f'fees per trade of {fees_per_trade}.')
+
     for idx_train, idx_test in cv.split(X=price_data_df):
         logging.get_aif_logger(__name__).debug(f'Cross-validation: Train from {min(idx_train)} to {max(idx_train)} / '
                                                f'Test from {min(idx_test)} to {max(idx_test)}.')
@@ -48,10 +49,9 @@ def cross_validate_strategy(strategy: Strategy, price_data: PriceData, max_lever
         price_data_train = PriceDataMirror(price_data=price_data, idx_filter=idx_train)
         price_data_test = PriceDataMirror(price_data=price_data, idx_filter=idx_test)
 
-        strategy.initialize(price_data=price_data_train, max_leverage=max_leverage,
-                            classifier_parameters=classifier_parameters)
+        strategy.initialize(price_data=price_data_train, classifier_parameters=classifier_parameters)
 
-        profit = evaluate_performance(strategy=strategy, price_data=price_data_test, fees_per_trade=fees_per_trade)
+        profit = evaluate_performance(strategy=strategy, price_data=price_data_test)
         performance_per_fold_detailed.append(profit.performance_detailed)
 
     performance_per_fold = [sum(p) for p in performance_per_fold_detailed]
@@ -61,9 +61,10 @@ def cross_validate_strategy(strategy: Strategy, price_data: PriceData, max_lever
 
     profitable_signals = len(list(filter(lambda x: x > 0, performance_detailed)))
     win_rate = round(profitable_signals / signals, 2) if signals > 0 else np.NAN
+    pps = round(performance / signals * 100, 2) if signals > 0 else np.NAN
     logging.get_aif_logger(__name__).debug(f'Total cross-validation performance: {round(performance * 100, 2)}% with'
                                            f' {signals} signals (Win-rate: {round(win_rate * 100, 2)}% / '
-                                           f'PPS: {round(performance / signals * 100, 2)}%)')
+                                           f'PPS: {pps}%)')
 
     if signals > 0:
         pps = round(performance / signals, 3)
@@ -73,7 +74,7 @@ def cross_validate_strategy(strategy: Strategy, price_data: PriceData, max_lever
     return StrategyPerformance(win_rate=win_rate, pps=pps, performance_detailed=performance_per_fold)
 
 
-def evaluate_performance(strategy: Strategy, price_data: PriceData, fees_per_trade: float) -> StrategyPerformance:
+def evaluate_performance(strategy: Strategy, price_data: PriceData) -> StrategyPerformance:
     """This method evaluates the performance for the complete price_data and assumes, that the strategy is already
     initialized. The method is used to evaluate the performance per fold in cross-validation, but also for a complete
     backtest of price_data."""
@@ -84,15 +85,16 @@ def evaluate_performance(strategy: Strategy, price_data: PriceData, fees_per_tra
     for idx in price_data_df[price_data_df[ENTER_TRADE_COLUMN]].index:
         if idx > last_exit_idx:  # Only enter a trade, after the last one was exited
             p, exit_idx = _get_profit_for_signal(strategy=strategy, price_data_df=price_data_df, idx=idx,
-                                                 max_leverage=strategy.max_leverage, fees_per_trade=fees_per_trade)
+                                                 max_leverage=price_data.asset_information.max_leverage,
+                                                 fees_per_trade=price_data.asset_information.fees_market_order)
 
             if exit_idx is not None:
                 last_exit_idx = exit_idx
                 performance_detailed.append(p)
-                logging.get_aif_logger(__name__).debug(f'Performance of trade from {idx} to {exit_idx}: '
+                logging.get_aif_logger(__name__).trace(f'Performance of trade from {idx} to {exit_idx}: '
                                                        f'{round(p * 100, 2)}%')
         else:
-            logging.get_aif_logger(__name__).debug(f'Skipping entry signal at {idx}. Last trade still active.')
+            logging.get_aif_logger(__name__).trace(f'Skipping entry signal at {idx}. Last trade still active.')
 
     signals = len(performance_detailed)
     performance = round(sum(performance_detailed), 2)
@@ -136,7 +138,7 @@ def _get_profit_for_signal(strategy: Strategy, price_data_df: pd.DataFrame, idx:
 
         return p, exit_signal.idx
     else:
-        logging.get_aif_logger(__name__).debug(f'No exit signal found for entry signal at {idx})')
+        logging.get_aif_logger(__name__).trace(f'No exit signal found for entry signal at {idx})')
         return 0, None
 
 

@@ -18,48 +18,48 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from aif.data_manangement.definitions import Timeframe
 from aif.data_preparation.indicator_config import IndicatorConfiguration, PriceDataConfiguration
-from aif.strategies.strategy_definitions import StrategyConfiguration
-from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.prep_command import Command, CommandDescription
 from aif.strategies.strategy import Strategy
+from aif.strategies.strategy_definitions import StrategyConfiguration
+from aif.strategies.strategy_trading_type import TradingType
 from aif.strategies.trade_risk_control import TradeRiskControl
 
 
 def get_long_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: EMA + Stochastic Strategy
-    Description: Strategy based on 200 EMA and the Stochastic Indicator. The strategy is based on
-    Credits: https://www.youtube.com/watch?v=vLbLZWi_Ypc, but with modifications (Downtrend + RSI Filter).
-    Status: Profitable in some areas on 1h
+    Name: MACD + EMA Strategy
+    Description: The strategy is inspired by: https://www.youtube.com/watch?v=mC5Bmz8RMW8
+    Note: Original was developed for 15m, therefore it needed some changes.
     """
 
     # Define all relevant indicators
     indicator_conf = {
         Timeframe.HOURLY: [
-            IndicatorConfiguration('EMA', 200, None),
-            IndicatorConfiguration('Stochastic', 14, None),
-            IndicatorConfiguration('RSI', 14, None),
-            IndicatorConfiguration('LastLow', 10, None),
-        ]
+            IndicatorConfiguration('EMA', 60, None),
+            IndicatorConfiguration('MACD', 26, None),
+            IndicatorConfiguration('ATRBands', 14, None),
+        ],
     }
     price_data_configurations = PriceDataConfiguration(indicator_conf)
 
     # Definition of the strategy
     # Preprocessor
     preprocessor = [
-        CommandDescription(Command.SHIFT, {'COLUMN': 'Stochastic_K_14'}),
-        CommandDescription(Command.SHIFT, {'COLUMN': 'Stochastic_D_14'}),
+        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'}),
     ]
 
     # Entry/Exit signals
-    entry_signal = '(EMA_200 > Close) & (Stochastic_K_14 > 25) & (Stochastic_K_14_Shift_1 < 20) & ' \
-                   '(Last_Low < 0.99 * Close) & (RSI_14 >= 30) & (RSI_14 <= 50)'
+    entry_signal = '((MACD_Hist / Close) > 0.001) & ' \
+                   '(MACD_Hist_Shift_1 < 0) & ' \
+                   '(Close > EMA_60) & ' \
+                   '(ATR_Lower_14 < 0.99 * Close)'
+
     exit_signal = None
 
     # Risk control
-    risk_control = TradeRiskControl(tp='Close + 2 * (Close - Last_Low)', sl='Last_Low')
+    risk_control = TradeRiskControl(tp='Close + 2 * (Close - ATR_Lower_14)', sl='ATR_Lower_14')
 
-    s = Strategy(name='EMA + Stochastic Strategy',
+    s = Strategy(name='MACD_+_EMA_Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -73,39 +73,41 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
 
 def get_short_strategy_configuration() -> StrategyConfiguration:
     """
-    Name: EMA + Stochastic Strategy
-    Description: Strategy based on 200 EMA and the Stochastic Indicator. The strategy is based on
-    Credits: https://www.youtube.com/watch?v=vLbLZWi_Ypc, but with modifications (Downtrend + RSI Filter).
-    Status: Profitable in some areas on 1h
+    Name: MACD + EMA Strategy
+    Description: The strategy is inspired by: https://www.youtube.com/watch?v=mC5Bmz8RMW8
+    Note: Original was developed for 15m, therefore it needed some changes.
     """
 
     # Define all relevant indicators
     indicator_conf = {
         Timeframe.HOURLY: [
-            IndicatorConfiguration('EMA', 200, None),
-            IndicatorConfiguration('Stochastic', 14, None),
-            IndicatorConfiguration('RSI', 14, None),
-            IndicatorConfiguration('Last_High', 10, None),
-        ]
+            IndicatorConfiguration('EMA', 100, None),
+            IndicatorConfiguration('MACD', 26, None),
+            IndicatorConfiguration('ATRBands', 14, None),
+            IndicatorConfiguration('VolumeRelativeToAverage', 50, None),
+        ],
     }
     price_data_configurations = PriceDataConfiguration(indicator_conf)
 
     # Definition of the strategy
     # Preprocessor
     preprocessor = [
-        CommandDescription(Command.SHIFT, {'COLUMN': 'Stochastic_K_14'}),
-        CommandDescription(Command.SHIFT, {'COLUMN': 'Stochastic_D_14'}),
+        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'}),
     ]
 
     # Entry/Exit signals
-    entry_signal = '(EMA_200 < Close) & (Stochastic_K_14 < 75) & (Stochastic_K_14_Shift_1 > 80) & ' \
-                   '(Last_High > 1.01 * Close)'
+    entry_signal = '((MACD_Hist / Close) < -0.0012) & ' \
+                   '(MACD_Hist_Shift_1 > 0) & ' \
+                   '(Close < EMA_100) & ' \
+                   '(ATR_Upper_14 > 1.01 * Close) & ' \
+                   '(Volume_Relative_50 > 1.2)'
+
     exit_signal = None
 
     # Risk control
-    risk_control = TradeRiskControl(tp='Close - 2 * (Last_High - Close)', sl='Last_High')
+    risk_control = TradeRiskControl(tp='Close - 2 * (ATR_Upper_14 - Close)', sl='ATR_Upper_14')
 
-    s = Strategy(name='EMA + Stochastic Strategy',
+    s = Strategy(name='MACD_+_EMA_Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

@@ -23,6 +23,9 @@ from aif.common.config import settings
 
 __logger_initialized = False
 
+FORMAT_MSG = '%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+FORMAT_DATE = '%Y-%m-%d %H:%M:%S'
+
 
 class PushsaferHandler(logging.StreamHandler):
 
@@ -41,6 +44,22 @@ def get_aif_logger(name: str):
     # Add logging level ALERT if called the first time.
     global __logger_initialized
     if not __logger_initialized:
+        # Set root logger
+        filename = f'{settings.common.project_path}{settings.common.log_root_filename}'
+        logging.basicConfig(format=FORMAT_MSG, datefmt=FORMAT_DATE, level=logging.INFO, filename=filename)
+
+        # Adding new level TRACE for very detailed debugging messages (e.g. individual trades in the evaluation process)
+        logging.addLevelName(5, 'TRACE')
+        setattr(logging, 'TRACE', 5)
+
+        # Adding a logging method for the TRACE level
+        def log_trace(self, message, *args, **kws):
+            if self.isEnabledFor(5):
+                # Yes, logger takes its '*args' as 'args'.
+                self._log(5, message, args, **kws)
+
+        logging.Logger.trace = log_trace
+
         # Adding a new level ACTION for actions that are initiated by the program.
         logging.addLevelName(100, 'ACTION')
         setattr(logging, 'ACTION', 100)
@@ -52,17 +71,16 @@ def get_aif_logger(name: str):
                 self._log(100, message, args, **kws)
 
         logging.Logger.action = log_action
+
         __logger_initialized = True
 
     logger = logging.getLogger(name)
     if len(logger.handlers) == 0:
-        logger = logging.getLogger(name)
         logger.propagate = False
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.TRACE)
 
         # Create a formatter that is used by all handlers TODO: Convert to UTC?
-        formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-                                      datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter(FORMAT_MSG, datefmt=FORMAT_DATE)
 
         # Create handlers
         # Log everything from level DEBUG to file

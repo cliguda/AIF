@@ -25,7 +25,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from aif import settings
+from aif.common.config import settings
 from aif.data_preparation.indicator_config import PriceDataConfiguration
 from aif.strategies.strategy_definitions import StrategyConfiguration
 from aif.strategies.strategy_trading_type import TradingType
@@ -99,7 +99,7 @@ def get_svm_strategy_configuration(tp: float, sl: float, trading_type: TradingTy
 def _get_strategy_configuration(tp: float, sl: float, trading_type: TradingType, classifier: Classifier) -> Strategy:
     risk_control = TradeRiskControl(tp=tp, sl=sl)
 
-    s = Strategy(name='TPSL Classifier',
+    s = Strategy(name='TPSL_Classifier',
                  trading_type=trading_type,
                  preprocessor=[],
                  entry_signal=classifier,

@@ -21,7 +21,7 @@ from typing import Callable, Optional, Union
 
 import pandas as pd
 
-from aif import settings
+from aif.common.config import settings
 from aif.strategies.strategy_trading_type import TradingType
 
 
@@ -52,7 +52,10 @@ class TradeRiskControl:
         else:
             tp_price = None
 
-        return tp_price
+        if tp_price is not None:
+            return round(tp_price, 3)
+        else:
+            return tp_price
 
     def get_sl_price(self, price_data_df: pd.DataFrame, trading_type: TradingType) -> Optional[float]:
         if isinstance(self.sl, float):
@@ -69,7 +72,10 @@ class TradeRiskControl:
         else:
             sl_price = None
 
-        return sl_price
+        if sl_price is not None:
+            return round(sl_price, 3)
+        else:
+            return sl_price
 
     def get_leverage_from_data(self, price_data_df: pd.DataFrame, trading_type: TradingType, max_leverage: int) -> int:
         """Returns the theoretical leverage to liquidate a trade when hitting sl."""

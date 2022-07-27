@@ -25,6 +25,10 @@ from enum import Enum
 class Asset(Enum):
     BTCUSD = 'BTCUSD'
     ETHUSD = 'ETHUSD'
+    BNBUSD = 'BNBUSD'
+    XRPUSD = 'XRPUSD'
+    ADAUSD = 'ADAUSD'
+    SOLUSD = 'SOLUSD'
 
 
 class Timeframe(Enum):

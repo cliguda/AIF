@@ -18,13 +18,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
 
+import keyboard
 import schedule
 
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-from aif import settings
 from aif.bot.order_management.order_status import OrderStatus
 from aif.bot.order_management.portfolio_manager import PortfolioManager
+from aif.common.config import settings
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Context
 from aif.data_manangement.price_data import PriceData, PriceDataComplete
@@ -45,17 +46,39 @@ class Bot:
 
     def run(self):
         """This method will not return and continue to iterate forever."""
-        if len(self.strategy_manager.strategies) == 0:
+        number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
+
+        if number_of_strategies == 0:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
 
-        schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
-        schedule.every().day.at("03:30").do(self._update_data_job)
-        logging.get_aif_logger(__name__).info('Bot started. Start looping....')
+        logging.get_aif_logger(__name__).info(f'Starting bot with {number_of_strategies} strategies.')
 
+        schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
+        schedule.every().day.at("02:15").do(self._update_data_job)
+        schedule.every().day.at("02:30").do(self._reevaluate_strategies_job)
+
+        logging.get_aif_logger(__name__).info('''Bot started. Now looping...(Press and hold 'q' to quit the bot).''')
         while True:
             schedule.run_pending()
+            if keyboard.is_pressed('q'):
+                self._quit_bot()
+                break
             time.sleep(1)
+
+    def _quit_bot(self) -> None:
+        logging.get_aif_logger(__name__).info('Quitting bot...')
+        exit_strategy_arg = ''
+        for context, strategy in self.strategy_manager.exit_strategies.items():
+            arg = f'{context.asset.name}:{context.timeframe.name}:{strategy.name}:{strategy.trading_type.name}'
+            if len(exit_strategy_arg) > 1:
+                exit_strategy_arg = f'{exit_strategy_arg},{arg}'
+            else:
+                exit_strategy_arg = arg
+
+        if len(exit_strategy_arg) > 0:
+            logging.get_aif_logger(__name__).info(f'Start bot with argument -exit {exit_strategy_arg} to add all '
+                                                  f'currently active exit strategies.')
 
     def _update_data_job(self) -> None:
         """The method updates all price data."""
@@ -65,11 +88,13 @@ class Bot:
                 logging.get_aif_logger(__name__).debug(f'Updating {context}')
                 indicator_conf = price_data.get_indicator_configuration()
                 aggregations = price_data.aggregations
+                asset_information = price_data.asset_information
 
                 self.dp.update_historical_data(asset=context.asset, timeframe=context.timeframe)
                 price_data_new_tf = self.dp.get_historical_data(asset=context.asset, timeframe=context.timeframe)
                 price_data_new = PriceDataComplete.create_from_timeframe(price_data_tf=price_data_new_tf,
-                                                                         aggregations=aggregations)
+                                                                         aggregations=aggregations,
+                                                                         asset_information=asset_information)
                 ta.add_indicators(price_data_new, indicator_conf)
 
                 self.price_data_list[context] = price_data_new
@@ -77,10 +102,23 @@ class Bot:
                                                        f'{max(price_data_new_tf.price_data_df.index)})')
             except Exception as e:
                 logging.get_aif_logger(__name__).error(
-                    f'Something went really wrong while updating {price_data.asset.name} on '
-                    f'{price_data.timeframe.name}: {e}')
+                    f'Something went really wrong while updating {price_data.context}: {e}')
 
         logging.get_aif_logger(__name__).info('Bot-Status: Update completed.')
+
+    def _reevaluate_strategies_job(self) -> None:
+        """The method reevaluates all strategies."""
+        logging.get_aif_logger(__name__).info('Bot-Status: Start reevaluating strategies...')
+        for price_data in self.price_data_list.values():
+            try:  # Not the best to put the complete block in a try/except, but it avoids the total crash.
+                self.strategy_manager.reevaluate_all_strategies(price_data=price_data)
+            except Exception as e:
+                logging.get_aif_logger(__name__).error(
+                    f'Something went really wrong while reevaluating strategies for {price_data.context}: {e}')
+
+        number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
+        logging.get_aif_logger(__name__).info(
+            f'Bot-Status: Reevaluation completed with {number_of_strategies} active strategies.')
 
     def _bot_job(self) -> None:
         """The method for iterating over all strategies and applying them to the given data once."""
@@ -102,14 +140,31 @@ class Bot:
                 self._apply_entry_strategies_for_price_data(price_data)
             except Exception as e:
                 logging.get_aif_logger(__name__).error(
-                    f'Something went really wrong for {price_data.asset.name} on {price_data.timeframe.name}: {e}')
+                    f'Something went really wrong while applying strategies for {price_data.context}: {e}')
 
         logging.get_aif_logger(__name__).info('Bot-Status: Iteration completed...taking a nap now.')
 
     def _apply_exit_strategies_for_price_data(self, price_data: PriceData) -> None:
-        """When a order was placed successfully by a strategy, the strategy can add an exit strategy for that trade.
-        If an exit strategy is available, it is applied to take actions on a possible exit signal. When the exit
-        strategy is applied successfully, it is removed from the strategy manager, since the trade is closed now."""
+        """When an order was placed successfully by a strategy, the strategy can add an exit strategy for that trade.
+        Before an exit strategy is applied, we check for an existing trade, because trade could have been closed by
+        TP/SL. If a position is still open, the exit strategy is applied to identify a possible exit signal. When
+        an exit signal is found, the exit strategy is removed from the strategy manager, since the trade is closed
+        now. """
+
+        # Check for trade, if an exit strategy exists.
+        context = Context(asset=price_data.asset, timeframe=price_data.timeframe)
+        if context not in self.strategy_manager.exit_strategies.keys():
+            return  # No exit strategy available
+
+        active_positions = self.pm.get_active_positions(asset=price_data.asset)
+        if not any([p.position_size > 0 for p in active_positions]):
+            logging.get_aif_logger(__name__).info(
+                'No active positions for active exit strategy. Exit strategy will be removed!')
+            self.strategy_manager.remove_exit_strategy(asset=price_data.asset, timeframe=price_data.timeframe)
+        else:
+            logging.get_aif_logger(__name__).debug(
+                'Exit strategy for active position found. Check for exit signal.')
+
         exit_signal = self.strategy_manager.apply_exit_strategies(price_data)
         if exit_signal:
             logging.get_aif_logger(__name__).info(
@@ -120,7 +175,7 @@ class Bot:
             if order_status == OrderStatus.ACCEPTED:
                 self.strategy_manager.remove_exit_strategy(asset=price_data.asset, timeframe=price_data.timeframe)
             else:
-                logging.get_aif_logger(__name__).info(f'Could NOT place exit-order. Exit strategy still active.')
+                logging.get_aif_logger(__name__).warning(f'Could NOT place exit-order. Exit strategy still active.')
 
     def _apply_entry_strategies_for_price_data(self, price_data: PriceData) -> None:
         """Apply all strategies to price data and placing the best order (if one or more trading signals were found).

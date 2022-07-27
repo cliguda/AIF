@@ -23,6 +23,7 @@ class OrderStatus(Enum):
     """Returns the status from an exchange, when an order is created."""
     ACCEPTED = 'ACCEPTED'
     EXISTING_ORDER = 'EXISTING_ORDER'
+    MAX_OPEN_POSITIONS = 'MAX_OPEN_POSITIONS'
     LEVERAGE_ERROR = 'LEVERAGE_ERROR'
     TRADING_TYPE_ERROR = 'TRADING_TYPE_ERROR'
     AVAILABLE_BALANCE_ERROR = 'AVAILABLE_BALANCE_ERROR'

@@ -16,29 +16,33 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import sys
+
 import aif.common.logging as logging
 import aif.data_preparation.ta as ta
-import aif.strategies.library.ema_stochastic as ema_stochastic_strategy
+import aif.strategies.library.stochastic_rsi as ema_stochastic_strategy
 import aif.strategies.library.heikin_ashi as heikin_ashi_strategy
+import aif.strategies.library.macd_ema as macd_ema_strategy
+import aif.strategies.library.rsi_stochastic_macd as rsi_stochastic_macd
 from aif.bot.bot import Bot
 from aif.bot.order_management.portfolio_manager import PortfolioManager
 from aif.common.license import get_license_notice
 from aif.data_manangement.data_provider import DataProvider
 from aif.data_manangement.definitions import Asset, Context, Timeframe
-from aif.data_manangement.price_data import PriceData, PriceDataComplete
+from aif.data_manangement.price_data import PriceDataComplete
 from aif.data_preparation.indicator_config import PriceDataConfiguration
-from aif.strategies import backtest
 from aif.strategies.strategy_manager import StrategyManager
+from aif.strategies.strategy_trading_type import TradingType
 
 """
 Main script to start the bot. By default the live mode is disabled (settings.toml: trading -> live_mode). If live mode 
 is activated, API keys for the exchanges must be provided (in secrets.toml). In default mode, trading signals are
 logged to the console and to log_alert_filename (see settings).
 
------------------------------------------------------------------------------------
-WARNING: The program, all results and the live mode are for education purpose only! 
+-------------------------------------------------------------------------------------------
+WARNING: The program, all results and the live mode are for education and fun purpose only! 
          READ THE DISCLAIMER BEFORE TAKING ANY ACTIONS!
------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------
 
 Notes:
 - The bot will run every hour and apply all relevant strategies to the price data. (Currently only hourly strategies
@@ -59,6 +63,10 @@ Configurations:
 PARAM_CONTEXT = [
     Context(Asset.BTCUSD, Timeframe.HOURLY),
     Context(Asset.ETHUSD, Timeframe.HOURLY),
+    Context(Asset.BNBUSD, Timeframe.HOURLY),
+    Context(Asset.XRPUSD, Timeframe.HOURLY),
+    Context(Asset.ADAUSD, Timeframe.HOURLY),
+    Context(Asset.SOLUSD, Timeframe.HOURLY),
 ]
 
 # Define all strategies to use
@@ -67,6 +75,10 @@ PARAM_STRATEGIES = [
     ema_stochastic_strategy.get_short_strategy_configuration,
     heikin_ashi_strategy.get_long_strategy_configuration,
     heikin_ashi_strategy.get_short_strategy_configuration,
+    macd_ema_strategy.get_long_strategy_configuration,
+    macd_ema_strategy.get_short_strategy_configuration,
+    rsi_stochastic_macd.get_long_strategy_configuration,
+    rsi_stochastic_macd.get_short_strategy_configuration,
 ]
 
 # Define aggregation levels
@@ -76,6 +88,7 @@ PARAM_AGGREGATIONS = [Timeframe.FOURHOURLY]
 def main():
     print(get_license_notice())
     dp = DataProvider()
+    pm = PortfolioManager()
 
     # Merging the configuration for all strategies
     price_data_conf = PriceDataConfiguration()
@@ -84,42 +97,65 @@ def main():
         price_data_conf.merge(strategy_conf.price_data_configuration)
 
     logging.get_aif_logger(__name__).info('Status: Update, load and prepare data....')
+
+    asset_information = pm.get_all_asset_information()  # Get meta-information for assets
+
     price_data_all: dict[Context, PriceDataComplete] = {}
     for context in PARAM_CONTEXT:
+        logging.get_aif_logger(__name__).info(f'Load and prepare data for {context.asset} on {context.timeframe}')
         dp.update_historical_data(context.asset, context.timeframe)
 
         # Get data
         price_data_tf = dp.get_historical_data(context.asset, context.timeframe)
-        price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=PARAM_AGGREGATIONS)
+        price_data = PriceDataComplete.create_from_timeframe(price_data_tf, aggregations=PARAM_AGGREGATIONS,
+                                                             asset_information=asset_information[context.asset])
         price_data_all[context] = price_data
 
-        logging.get_aif_logger(__name__).info(f'Preparing data for {context.asset} on {context.timeframe}')
         ta.add_indicators(price_data_all[context], price_data_conf.configurations)
 
     # Setup strategies
     sm = StrategyManager()
 
-    pm = PortfolioManager()
-    asset_information = pm.get_all_asset_information()
-
     logging.get_aif_logger(__name__).info('Status: Create strategies....')
     for s in PARAM_STRATEGIES:
         for context, price_data in price_data_all.items():
             strategy = s().strategy
+            sm.add_strategy(strategy=strategy, price_data=price_data)
 
-            performance = backtest.cross_validate_strategy(strategy=strategy, price_data=price_data,
-                                                           max_leverage=asset_information[context.asset].max_leverage,
-                                                           fees_per_trade=asset_information[
-                                                               context.asset].fees_market_order)
-
-            strategy.initialize(price_data=price_data, max_leverage=asset_information[context.asset].max_leverage)
-            strategy.set_performance(performance)
-            sm.add_entry_strategy(strategy=strategy, asset=context.asset, timeframe=context.timeframe)
+    # Setup exit strategies provided as command line arguments.
+    if len(sys.argv) >= 3 and sys.argv[1] == '-exit':
+        _add_exit_strategies(sm)
 
     # Run strategies every hour
     bot = Bot(price_data_list=price_data_all, strategy_manager=sm, dp=dp, pm=pm)
     logging.get_aif_logger(__name__).info('Status: Setup completed. Now starting the bot...')
     bot.run()
+
+
+def _add_exit_strategies(sm: StrategyManager):
+    logging.get_aif_logger(__name__).info('Status: Add exit strategies provided as command line arguments....')
+    arg = sys.argv[2]
+
+    for x in arg.split(sep=','):
+        asset = Asset[x.split(':')[0]]
+        timeframe = Timeframe[x.split(':')[1]]
+        strategy_name = x.split(':')[2]
+        trading_type = TradingType[x.split(':')[3]]
+
+        found_strategy = False
+        for strategy in sm.all_strategies.get(Context(asset=asset, timeframe=timeframe)):
+            # Search for correct strategy.
+
+            if strategy.name == strategy_name and strategy.trading_type == trading_type:
+                found_strategy = True
+                logging.get_aif_logger(__name__).debug(
+                    f'Add exit strategy for {asset.name} on {timeframe.name} for '
+                    f'strategy {strategy_name} ({trading_type.name}).')
+
+                sm.add_exit_strategy(strategy)
+        if not found_strategy:
+            logging.get_aif_logger(__name__).warning(f'No strategy {strategy_name} ({trading_type}) found for'
+                                                     f'{asset.name} on {timeframe.name}')
 
 
 if __name__ == "__main__":
