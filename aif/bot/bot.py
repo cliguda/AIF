@@ -57,7 +57,7 @@ class Bot:
         schedule.every().day.at("02:15").do(self._update_data_job)
         schedule.every().day.at("02:30").do(self._reevaluate_strategies_job)
 
-        logging.get_aif_logger(__name__).info('''Bot started. Now looping...(Press and hold 'q' to quit the bot).''')
+        logging.get_aif_logger(__name__).info('''Bot started. Now looping...''')
         while True:
             schedule.run_pending()
             time.sleep(1)
