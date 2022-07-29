@@ -15,4 +15,3 @@ numba~=0.55.1
 requests~=2.27.1
 ta~=0.10.1
 pytest~=6.2.5
-keyboard~=0.13.5

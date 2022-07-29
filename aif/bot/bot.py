@@ -18,7 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
 
-import keyboard
 import schedule
 
 import aif.common.logging as logging
@@ -61,13 +60,11 @@ class Bot:
         logging.get_aif_logger(__name__).info('''Bot started. Now looping...(Press and hold 'q' to quit the bot).''')
         while True:
             schedule.run_pending()
-            if keyboard.is_pressed('q'):
-                self._quit_bot()
-                break
             time.sleep(1)
 
-    def _quit_bot(self) -> None:
-        logging.get_aif_logger(__name__).info('Quitting bot...')
+    def _print_exit_strategies_cmd_arg(self) -> None:
+        """Checks for active exit strategies and prints the command line argument to add the exit strategies on a
+        restart."""
         exit_strategy_arg = ''
         for context, strategy in self.strategy_manager.exit_strategies.items():
             arg = f'{context.asset.name}:{context.timeframe.name}:{strategy.name}:{strategy.trading_type.name}'
@@ -77,6 +74,7 @@ class Bot:
                 exit_strategy_arg = arg
 
         if len(exit_strategy_arg) > 0:
+            logging.get_aif_logger(__name__).info('Exit strategies are active!')
             logging.get_aif_logger(__name__).info(f'Start bot with argument -exit {exit_strategy_arg} to add all '
                                                   f'currently active exit strategies.')
 
@@ -143,6 +141,7 @@ class Bot:
                 logging.get_aif_logger(__name__).error(
                     f'Something went really wrong while applying strategies for {price_data.context}: {e}')
 
+        self._print_exit_strategies_cmd_arg()
         logging.get_aif_logger(__name__).info('Bot-Status: Iteration completed...taking a nap now.')
 
     def _apply_exit_strategies_for_price_data(self, price_data: PriceData) -> None:
