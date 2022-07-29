@@ -52,7 +52,7 @@ class Bot:
             logging.get_aif_logger(__name__).info('No strategies are available, so I have nothing todo...')
             return
 
-        logging.get_aif_logger(__name__).info(f'Starting bot with {number_of_strategies} strategies.')
+        self._print_current_strategies()
 
         schedule.every().hour.at(settings.bot.run_hourly_at).do(self._bot_job)
         schedule.every().day.at("02:15").do(self._update_data_job)
@@ -119,6 +119,7 @@ class Bot:
         number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
         logging.get_aif_logger(__name__).info(
             f'Bot-Status: Reevaluation completed with {number_of_strategies} active strategies.')
+        self._print_current_strategies()
 
     def _bot_job(self) -> None:
         """The method for iterating over all strategies and applying them to the given data once."""
@@ -197,3 +198,12 @@ class Bot:
             if order_status == OrderStatus.ACCEPTED and order.from_strategy.exit_signal is not None:
                 self.strategy_manager.add_exit_strategy(order.from_strategy)
                 logging.get_aif_logger(__name__).info(f'Added exit strategy for {order.from_strategy}')
+
+    def _print_current_strategies(self):
+        number_of_strategies = sum([len(s) for s in self.strategy_manager.current_strategies.values()])
+
+        logging.get_aif_logger(__name__).info(f'Running bot with {number_of_strategies} strategies.')
+        for context in self.strategy_manager.current_strategies.keys():
+            for strategy in self.strategy_manager.current_strategies[context]:
+                logging.get_aif_logger(__name__).info(f'Performance of strategy {strategy.name} for {context}: '
+                                                      f'{strategy.get_performance()}')

@@ -137,7 +137,7 @@ while the cross-validation result relates to the current performance as provided
 average performance per signal, while the total performance relates to the performance for all signals in the evaluation
 period.
 
-**Results:**<br/>
+**Results:** *(Strategy: RSI_Stochastic_MACD_Strategy - Long)*<br/>
 BTCUSD on timeframe HOURLY - Backtesting result: Win-rate: 43.0% / PPS: 3.9% / Total Performance: 931.93%<br/>
 BTCUSD on timeframe HOURLY - Cross-Validation result: Win-rate: 54.0% / PPS: 29.1% / Total Performance: 378.26%<br/>
 ETHUSD on timeframe HOURLY - Backtesting result: Win-rate: 46.0% / PPS: 11.5% / Total Performance: 2886.47%<br/>

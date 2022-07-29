@@ -50,6 +50,10 @@ PARAM_CONTEXT = [
     Context(Asset.XRPUSD, Timeframe.HOURLY),
     Context(Asset.ADAUSD, Timeframe.HOURLY),
     Context(Asset.SOLUSD, Timeframe.HOURLY),
+    Context(Asset.DOGEUSD, Timeframe.HOURLY),
+    Context(Asset.DOTUSD, Timeframe.HOURLY),
+    Context(Asset.MATICUSD, Timeframe.HOURLY),
+    Context(Asset.LINKUSD, Timeframe.HOURLY),
 ]
 
 PARAM_STRATEGY = library_strategy.get_long_strategy_configuration

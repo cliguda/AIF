@@ -48,6 +48,10 @@ class PortfolioManager:
             Asset.XRPUSD: exchange_bybit,
             Asset.ADAUSD: exchange_bybit,
             Asset.SOLUSD: exchange_bybit,
+            Asset.DOGEUSD: exchange_bybit,
+            Asset.DOTUSD: exchange_bybit,
+            Asset.MATICUSD: exchange_bybit,
+            Asset.LINKUSD: exchange_bybit,
         }
 
         self.live_mode = settings.trading.live_mode

@@ -59,7 +59,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close + 2 * (Close - ATR_Lower_14)', sl='ATR_Lower_14')
 
-    s = Strategy(name='MACD_+_EMA_Strategy',
+    s = Strategy(name='MACD_EMA_Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -107,7 +107,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close - 2 * (ATR_Upper_14 - Close)', sl='ATR_Upper_14')
 
-    s = Strategy(name='MACD_+_EMA_Strategy',
+    s = Strategy(name='MACD_EMA_Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,

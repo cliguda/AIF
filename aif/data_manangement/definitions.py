@@ -29,6 +29,11 @@ class Asset(Enum):
     XRPUSD = 'XRPUSD'
     ADAUSD = 'ADAUSD'
     SOLUSD = 'SOLUSD'
+    DOGEUSD = 'DOGEUSD'
+    DOTUSD = 'DOTUSD'
+    MATICUSD = 'MATICUSD'
+    LINKUSD = 'LINKUSD'
+
 
 
 class Timeframe(Enum):

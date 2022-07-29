@@ -61,7 +61,7 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close + 1.5 * (Close - Last_Low)', sl='Last_Low')
 
-    s = Strategy(name='RSI_+_Stochastic_+_MACD_Strategy',
+    s = Strategy(name='RSI_Stochastic_MACD_Strategy',
                  trading_type=TradingType.LONG,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
@@ -109,7 +109,7 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Risk control
     risk_control = TradeRiskControl(tp='Close - 1.5 * (Last_High - Close)', sl='Last_High')
 
-    s = Strategy(name='RSI_+_Stochastic_+_MACD_Strategy',
+    s = Strategy(name='RSI_Stochastic_MACD_Strategy',
                  trading_type=TradingType.SHORT,
                  preprocessor=preprocessor,
                  entry_signal=entry_signal,
