@@ -21,25 +21,14 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
+import ta.trend
+import ta.volatility
+import ta.volume
 import talib  # Classical Ta-Lib
-from ta.trend import STCIndicator  # Python based ta lib
 
 import aif.common.logging as logging
 from aif.data_manangement.price_data import PriceDataTimeframe
 from aif.data_preparation.indicator_config import IndicatorConfiguration
-
-"""
-Implementation of all indicators.
-Structure of this file:
-- Definition of the abstract class Indicator
-- Price indicators
-- Momentum indicators
-- Volume indicators
-- Volatility indicators
-- Others indicators
-- Pattern related Features
-
-"""
 
 
 class Indicator(ABC):
@@ -71,8 +60,6 @@ class Indicator(ABC):
         raise NotImplementedError()
 
 
-# Price Indicators
-
 class EMA(Indicator):
     """Simple EMA indicator (Can be converted relative to the closing price.)"""
 
@@ -82,8 +69,6 @@ class EMA(Indicator):
         price_data_df.loc[:, col_name] = talib.EMA(price_data_df['Close'], timeperiod=window)
         return col_name
 
-
-# Momentum Indicators
 
 class EMASlope(Indicator):
     """
@@ -231,8 +216,6 @@ class MACD(Indicator):
         return None
 
 
-# Volume Indicators
-
 class VolumeRelativeToAverage(Indicator):
     """Volume relative to the average volume for the past "window" candles."""
 
@@ -247,7 +230,19 @@ class VolumeRelativeToAverage(Indicator):
         return None
 
 
-# Volatility Indicators
+class ATR(Indicator):
+    """ The ATR is calculated on the last 14 candles by default."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
+        col_name = f'ATR_{str(window)}'
+
+        atr = talib.ATR(price_data_df['High'], price_data_df['Low'], price_data_df['Close'])
+
+        price_data_df.loc[:, col_name] = atr / price_data_df['Close']
+
+        return None
+
 
 class ATRBands(Indicator):
     """ATR Bands. Default window = 14."""
@@ -267,8 +262,6 @@ class ATRBands(Indicator):
         return [col_name_upper, col_name_lower]
 
 
-# Others indicators
-
 class BollingerBands(Indicator):
     """Bollinger Bands. Default window = 20."""
 
@@ -284,6 +277,109 @@ class BollingerBands(Indicator):
         price_data_df.loc[:, col_name_lower] = bb[2]
 
         return [col_name_upper, col_name_lower]
+
+
+class STC(Indicator):
+    """Adds the STC indicator. Default window is 50."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> None:
+        closing_col = kwargs.get('closing_col', 'Close')
+
+        col_name = f'STC_{str(window)}'
+
+        stc = ta.trend.STCIndicator(close=price_data_df[closing_col], window_slow=window)
+        price_data_df.loc[:, col_name] = stc.stc()
+
+        return None
+
+
+class MFI(Indicator):
+    """ The MFI is calculated on the last 14 candles by default."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
+        col_name = f'MFI_{str(window)}'
+        price_data_df.loc[:, col_name] = ta.volume.money_flow_index(high=price_data_df['High'],
+                                                                    low=price_data_df['Low'],
+                                                                    close=price_data_df['Close'],
+                                                                    volume=price_data_df['Volume'],
+                                                                    window=window)
+
+        return None
+
+
+# Values are incredible high. Maybe a bug in the implementation?
+# class EMV(Indicator):
+#     """ The EMV is calculated on the last 14 candles by default."""
+#
+#     @classmethod
+#     def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> Optional[str]:
+#         col_name = f'EMV_{str(window)}'
+#         price_data_df.loc[:, col_name] = ta.volume.ease_of_movement(high=price_data_df['High'],
+#                                                                     low=price_data_df['Low'],
+#                                                                     volume=price_data_df['Volume'],
+#                                                                     window=window)
+#
+#         return None
+
+
+class KeltnerChannel(Indicator):
+    """ The KeltnerChannel is calculated on the last 20 candles by default."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> list[str]:
+        col_name_upper = f'KC_Upper_{str(window)}'
+        col_name_lower = f'KC_Lower_{str(window)}'
+
+        price_data_df.loc[:, col_name_upper] = ta.volatility.keltner_channel_hband(high=price_data_df['High'],
+                                                                                   low=price_data_df['Low'],
+                                                                                   close=price_data_df['Close'],
+                                                                                   window=window)
+        price_data_df.loc[:, col_name_lower] = ta.volatility.keltner_channel_lband(high=price_data_df['High'],
+                                                                                   low=price_data_df['Low'],
+                                                                                   close=price_data_df['Close'],
+                                                                                   window=window)
+
+        return [col_name_upper, col_name_lower]
+
+
+class ADX(Indicator):
+    """ The ADX is calculated on the last 14 candles by default."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> None:
+        col_name = f'ADX_{str(window)}'
+
+        price_data_df.loc[:, col_name] = ta.trend.adx(high=price_data_df['High'],
+                                                      low=price_data_df['Low'],
+                                                      close=price_data_df['Close'],
+                                                      window=window)
+
+        return None
+
+
+class Vortex(Indicator):
+    """ The Vortex is calculated on the last 14 candles by default. The added column provides the difference between
+    the positive and the negative line."""
+
+    @classmethod
+    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> None:
+        col_name = f'Vortex_{str(window)}'
+
+        vortex_p = ta.trend.vortex_indicator_pos(high=price_data_df['High'],
+                                                 low=price_data_df['Low'],
+                                                 close=price_data_df['Close'],
+                                                 window=window)
+
+        vortex_n = ta.trend.vortex_indicator_neg(high=price_data_df['High'],
+                                                 low=price_data_df['Low'],
+                                                 close=price_data_df['Close'],
+                                                 window=window)
+
+        price_data_df.loc[:, col_name] = vortex_p - vortex_n
+
+        return None
 
 
 # Pattern related features
@@ -386,18 +482,3 @@ class HeikinAshi(Indicator):
         price_data_df.drop(columns=['_last_open', '_last_close'], inplace=True)
 
         return ['HA_Open', 'HA_High', 'HA_Low', 'HA_Close']
-
-
-class STC(Indicator):
-    """Adds the STC indicator. Default window is 50."""
-
-    @classmethod
-    def indicator_implementation(cls, price_data_df: pd.DataFrame, window: int, **kwargs) -> None:
-        closing_col = kwargs.get('closing_col', 'Close')
-
-        col_name = f'STC_{str(window)}'
-
-        stc = STCIndicator(close=price_data_df[closing_col], window_slow=window)
-        price_data_df.loc[:, col_name] = stc.stc()
-
-        return None

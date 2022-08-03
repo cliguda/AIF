@@ -41,9 +41,22 @@ def test_atr(dp):
     price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
 
     columns = price_data_tf.price_data_df.columns.values
-    indicators.ATRBands.add_indicator(price_data_tf, 14)
+    indicators.ATR.add_indicator(price_data_tf, 14)
 
     # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, ['ATR_14'])
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 14
+    assert price_data_tf.relative_cols == []
+
+
+def test_atr_bands(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.ATRBands.add_indicator(price_data_tf, 14)
+
     columns = np.append(columns, ['ATR_Upper_14', 'ATR_Lower_14'])
     assert all(columns == price_data_tf.price_data_df.columns)
     assert price_data_tf.max_window == 14
@@ -164,6 +177,52 @@ def test_squeezing_momentum_indicators(dp):
     assert price_data_tf.max_window == 20
 
 
+def test_keltner_channel(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.KeltnerChannel.add_indicator(price_data_tf, 20)
+
+    # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, ['KC_Upper_20', 'KC_Lower_20'])
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 20
+    assert price_data_tf.relative_cols == ['KC_Upper_20', 'KC_Lower_20']
+    assert all(price_data_tf.price_data_df['KC_Upper_20'] >= price_data_tf.price_data_df['KC_Lower_20'])
+
+
+def test_adx(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.ADX.add_indicator(price_data_tf, 14)
+
+    # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, ['ADX_14'])
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 14
+    assert price_data_tf.relative_cols == []
+
+    assert min(price_data_tf.price_data_df['ADX_14']) == 0.0
+    assert max(price_data_tf.price_data_df['ADX_14']) <= 100
+
+
+def test_vortex(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.Vortex.add_indicator(price_data_tf, 14)
+
+    # No testing of values, because its a direct implementation of python libraries
+    columns = np.append(columns, ['Vortex_14'])
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 14
+    assert price_data_tf.relative_cols == []
+
+
 def test_last_low():
     # Create data
     values = [5, 4, 3, 4.5, 5.5, 6, 5.1, 4.1, 5.2, 4.3, 3.5, 7, 8, 9, 8, 7, 6, 7, 8, 9, 10]
@@ -221,3 +280,19 @@ def test_heikin_ashi():
     assert price_data_tf.price_data_df.loc[1, 'HA_Close'] == 2.5
     assert price_data_tf.price_data_df.loc[1, 'HA_High'] == 4
     assert price_data_tf.price_data_df.loc[1, 'HA_Low'] == 1
+
+
+def test_mfi(dp):
+    filename = f'{settings.common.project_path}{settings.data_provider.filename_testing}'
+    price_data_tf = dp.get_historical_data_from_file(filename, Asset.BTCUSD, Timeframe.HOURLY)
+
+    columns = price_data_tf.price_data_df.columns.values
+    indicators.MFI.add_indicator(price_data_tf, window=14)
+
+    columns = np.append(columns, 'MFI_14')
+    assert all(columns == price_data_tf.price_data_df.columns)
+    assert price_data_tf.max_window == 14
+
+    assert len(price_data_tf.relative_cols) == 0
+    assert np.nanmax(price_data_tf.price_data_df['MFI_14']) == 100
+    assert np.nanmin(price_data_tf.price_data_df['MFI_14']) == 0
