@@ -64,8 +64,8 @@ def _evaluate_long_group(m: np.array, sl_threshold: float, tp_threshold: float) 
 
     m = m[1:]
 
-    m = np.append(m, np.reshape(m[:, 1] <= threshold_sl_price, (-1, 1)), axis=1)  # 4
-    m = np.append(m, np.reshape(m[:, 2] >= threshold_tp_price, (-1, 1)), axis=1)  # 5
+    m = np.append(m, np.reshape(m[:, 2] <= threshold_sl_price, (-1, 1)), axis=1)  # 4
+    m = np.append(m, np.reshape(m[:, 1] >= threshold_tp_price, (-1, 1)), axis=1)  # 5
 
     sl_index = min(np.nonzero(m[:, 4] == 1)[0]) if len(np.nonzero(m[:, 4] == 1)[0]) > 0 else 10000000
     tp_index = min(np.nonzero(m[:, 5] == 1)[0]) if len(np.nonzero(m[:, 5] == 1)[0]) > 0 else 10000000
@@ -83,8 +83,8 @@ def _evaluate_short_group(m: np.array, sl_threshold: float, tp_threshold: float)
 
     m = m[1:]
 
-    m = np.append(m, np.reshape(m[:, 2] <= threshold_sl_price, (-1, 1)), axis=1)  # 4
-    m = np.append(m, np.reshape(m[:, 1] >= threshold_tp_price, (-1, 1)), axis=1)  # 5
+    m = np.append(m, np.reshape(m[:, 1] >= threshold_sl_price, (-1, 1)), axis=1)  # 4
+    m = np.append(m, np.reshape(m[:, 2] <= threshold_tp_price, (-1, 1)), axis=1)  # 5
 
     sl_index = min(np.nonzero(m[:, 4] == 1)[0]) if len(np.nonzero(m[:, 4] == 1)[0]) > 0 else 10000000
     tp_index = min(np.nonzero(m[:, 5] == 1)[0]) if len(np.nonzero(m[:, 5] == 1)[0]) > 0 else 10000000
