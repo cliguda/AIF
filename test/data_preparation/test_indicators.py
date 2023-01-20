@@ -225,7 +225,7 @@ def test_vortex(dp):
 
 def test_last_low():
     # Create data
-    values = [5, 4, 3, 4.5, 5.5, 6, 5.1, 4.1, 5.2, 4.3, 3.5, 7, 8, 9, 8, 7, 6, 7, 8, 9, 10]
+    values = [5, 4, 3, 4.5, 5.5, 6, 5.1, 4.1, 5.2, 4.3, 3.5, 7, 8, 9, 8, 7, 6, 7, 8, 9, 10, 9]
     df = pd.DataFrame({'Open': values, 'High': values, 'Low': values, 'Close': values, 'Volume': values})
     price_data_tf = PriceDataTimeframe(price_data_df=df, timeframe=Timeframe.HOURLY, asset=Asset.BTCUSD)
 
@@ -235,19 +235,19 @@ def test_last_low():
     assert price_data_tf.max_window == 10
 
     assert 'Last_Low' in price_data_tf.price_data_df.columns
-    assert all(np.isnan(price_data_tf.price_data_df.loc[0:9, 'Last_Low']))
-    assert all(price_data_tf.price_data_df.loc[10:15, 'Last_Low'] == 3.5)
-    assert all(price_data_tf.price_data_df.loc[16:, 'Last_Low'] == 6)
+    assert all(np.isnan(price_data_tf.price_data_df.loc[0:14, 'Last_Low']))
+    assert all(price_data_tf.price_data_df.loc[15:20, 'Last_Low'] == 3.5)
+    assert all(price_data_tf.price_data_df.loc[21:, 'Last_Low'] == 6)
 
     indicators.LastLow.add_indicator(price_data_tf, window=10, prev=1)
     assert 'Last_Low_Prev_1' in price_data_tf.price_data_df.columns
-    assert all(np.isnan(price_data_tf.price_data_df.loc[0:15, 'Last_Low_Prev_1']))
-    assert all(price_data_tf.price_data_df.loc[16:, 'Last_Low_Prev_1'] == 3.5)
+    assert all(np.isnan(price_data_tf.price_data_df.loc[0:20, 'Last_Low_Prev_1']))
+    assert all(price_data_tf.price_data_df.loc[21:, 'Last_Low_Prev_1'] == 3.5)
 
 
 def test_last_high():
     # Create data
-    values = [5, 4, 3, 4.5, 5.5, 6, 5.1, 4.1, 5.2, 4.3, 3.5, 7, 8, 9, 8, 7, 8, 7.5, 6.5]
+    values = [5, 4, 3, 4.5, 5.5, 6, 5.1, 4.1, 5.2, 4.3, 3.5, 7, 8, 9, 8, 7, 8, 7.5, 6.5, 6.5]
     df = pd.DataFrame({'Open': values, 'High': values, 'Low': values, 'Close': values, 'Volume': values})
     price_data_tf = PriceDataTimeframe(price_data_df=df, timeframe=Timeframe.HOURLY, asset=Asset.BTCUSD)
 
@@ -257,15 +257,15 @@ def test_last_high():
     assert price_data_tf.max_window == 10
 
     assert 'Last_High' in price_data_tf.price_data_df.columns
-    assert all(np.isnan(price_data_tf.price_data_df.loc[0:4, 'Last_High']))
-    assert all(price_data_tf.price_data_df.loc[5:12, 'Last_High'] == 6.0)
-    assert all(price_data_tf.price_data_df.loc[13:16, 'Last_High'] == 9.0)
+    assert all(np.isnan(price_data_tf.price_data_df.loc[0:9, 'Last_High']))
+    assert all(price_data_tf.price_data_df.loc[10:17, 'Last_High'] == 6.0)
+    assert all(price_data_tf.price_data_df.loc[18:, 'Last_High'] == 9.0)
 
     indicators.LastHigh.add_indicator(price_data_tf, window=10, prev=1)
 
     assert 'Last_High_Prev_1' in price_data_tf.price_data_df.columns
-    assert all(np.isnan(price_data_tf.price_data_df.loc[0:12, 'Last_High_Prev_1']))
-    assert all(price_data_tf.price_data_df.loc[13:16, 'Last_High_Prev_1'] == 6.0)
+    assert all(np.isnan(price_data_tf.price_data_df.loc[0:17, 'Last_High_Prev_1']))
+    assert all(price_data_tf.price_data_df.loc[18:, 'Last_High_Prev_1'] == 6.0)
 
 
 def test_heikin_ashi():

@@ -64,12 +64,22 @@ def test_get_sl_price():
 
 
 def test_get_leverage():
-    price_data_df = pd.DataFrame(data={'Close': [1000, 950, 900, 1050]})
+    price_data_df = pd.DataFrame(data={'Close': [8500, 9500, 9000, 8000]})  # Last Price is entry price
     settings.trading.leverage_reduction = 0.1
 
-    # Get leverage if set
-    risk_control = TradeRiskControl(tp=0.04, sl=0.02)
-
-    assert risk_control.get_leverage_from_data(price_data_df, trading_type=TradingType.LONG, max_leverage=60) == 45
-    # If Leverage is max_leverage (and therefore the sl is hit before liquidation, no leverage adjustment is necessary)
+    # Get leverage (Example from https://www.bybit.com/en-US/help-center/bybitHC_Article?language=en_US&id=000001100)
+    # Long
+    risk_control = TradeRiskControl(tp=0.04, sl='7882')
+    expected_lvg = 50 * (1 - settings.trading.leverage_reduction)
+    assert risk_control.get_leverage_from_data(price_data_df, trading_type=TradingType.LONG,
+                                               max_leverage=60) == expected_lvg
+    # Test max Lvg
     assert risk_control.get_leverage_from_data(price_data_df, trading_type=TradingType.LONG, max_leverage=40) == 40
+
+    # Short
+    risk_control = TradeRiskControl(tp=0.04, sl='8121.50')
+    expected_lvg = 50 * (1 - settings.trading.leverage_reduction)
+    assert risk_control.get_leverage_from_data(price_data_df, trading_type=TradingType.SHORT,
+                                               max_leverage=60) == expected_lvg
+    # Test max Lvg
+    assert risk_control.get_leverage_from_data(price_data_df, trading_type=TradingType.SHORT, max_leverage=40) == 40

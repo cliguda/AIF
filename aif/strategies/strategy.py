@@ -47,30 +47,15 @@ class OrderInformation:
     leverage: int
     tp_price: Optional[float] = None
     sl_price: Optional[float] = None
+    conditional: Optional[bool] = False
 
     def __post_init__(self):
         if self.tp_price is None and self.from_strategy.exit_signal is None:
             raise ValueError('Neither tp_price not exit strategy are provided.')
-        if not self._validate_leverage():
-            raise ValueError('Incorrect leverage.')
-
-    def _validate_leverage(self):
-        # Checking for correct SL/Leverage settings.
-        if self.sl_price is not None:
-            if self.trading_type == TradingType.LONG:
-                lvg_by_sl = 1 / ((self.entering_price_planned - self.sl_price) / self.entering_price_planned)
-            else:
-                lvg_by_sl = 1 / ((self.sl_price - self.entering_price_planned) / self.entering_price_planned)
-
-            if lvg_by_sl < 0.99 * self.leverage:  # Check for over-leveraging (0.99 to avoid rounding errors).
-                logging.get_aif_logger(__name__).warning(
-                    'Leverage too high. Order would get liquidated before hitting sl!')
-                return False
-
-        return True
 
     def __str__(self):
-        return f'Order for {self.asset.name} from {self.from_strategy} with {self.leverage} leverage ' \
+        order_type = 'Order' if not self.conditional else 'Conditional Order'
+        return f'{order_type} for {self.asset.name} from {self.from_strategy} with {self.leverage} leverage ' \
                f'(Entry price: {self.entering_price_planned} / TP: {self.tp_price} / SL: {self.sl_price}).'
 
 

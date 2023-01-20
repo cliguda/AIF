@@ -97,7 +97,7 @@ class DataProvider:
         theoretical_size = (max(price_data_df.index) - min(price_data_df.index)).total_seconds() // verification_factor
 
         if (theoretical_size - len(price_data_df)) / len(price_data_df) > 0.005:
-            raise DataProviderException(f'Historical data for {asset} on {timeframe} has invalid size.')
+            logging.get_aif_logger(__name__).warning(f'Historical data for {asset} on {timeframe} has invalid size.')
 
         filename_template = f'{settings.common.project_path}{settings.data_provider.filename_template}'
         filename = filename_template.format(asset=asset.name, timeframe=timeframe.name,
@@ -248,9 +248,9 @@ class DataProvider:
 
         # Data from Binance is a bit messy, therefore we need some cleanup here.
         p1 = price_data[np.isnan(price_data['tradecount'])].copy()
-        p1.loc[:, 'Date'] = p1['unix'].apply(lambda d: dt.datetime.fromtimestamp(d, tz=tz.UTC).replace(tzinfo=None))
+        p1.loc[:, 'Date'] = p1['Unix'].apply(lambda d: dt.datetime.fromtimestamp(d, tz=tz.UTC).replace(tzinfo=None))
         p2 = price_data[~np.isnan(price_data['tradecount'])].copy()
-        p2.loc[:, 'Date'] = p2['unix'].apply(
+        p2.loc[:, 'Date'] = p2['Unix'].apply(
             lambda d: dt.datetime.fromtimestamp(d // 1000, tz=tz.UTC).replace(tzinfo=None))
 
         p = pd.concat([p1, p2])
@@ -271,7 +271,7 @@ class DataProvider:
             raise ValueError(f'No unique volume column found for {asset.name} on {timeframe.name}')
 
         vol_column = vol_columns[0]
-        p = p[['open', 'high', 'low', 'close', vol_column]]
+        p = p[['Open', 'High', 'Low', 'Close', vol_column]]
         p.columns = OHLCV_COLUMNS
 
         return p

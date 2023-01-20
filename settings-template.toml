@@ -42,11 +42,11 @@ run_hourly_at = ':00'
 
 [trading]
 live_mode = false           # WARNING: READ DISCLAIMER FIRST !!!
-size_per_trade = 0.03       # Size per trade of the total equity, e.g. if an account holds 1000$ and the size per trade
+size_per_trade = 0.01       # Size per trade of the total equity, e.g. if an account holds 1000$ and the size per trade
                             # is 0.05, the size per trade will be 50$.
 max_open_positions = 3      # Max. number of open positions. The bot will NOT place an order, if already
                             # max_open_positions positions are active (no matter on what exchange).
-leverage_reduction = 0.1    # To avoid a over-leveraging and the risk of false liquidation, because of slippage, etc.
+leverage_reduction = 0.025  # To avoid a over-leveraging and the risk of false liquidation, because of slippage, etc.
                             # the leverage will be reduced by this factor (e.g. a 20 leverage and reduction of 0.1 will
                             # result in a 18 leverage).
 default_max_leverage = 50   # If no connection to an exchange is available, use this value as max. leverage.

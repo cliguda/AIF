@@ -123,7 +123,7 @@ def test_apply_strategy():
     assert order_information.trading_type == TradingType.LONG
     assert abs(order_information.pps - 1.0) < 0.001
     assert order_information.entering_price_planned == 1060
-    assert order_information.leverage == 9  # Leverage is adjusted
+    assert order_information.leverage == 7
     assert order_information.tp_price is None
     assert abs(order_information.sl_price - 954) < 0.001
 
@@ -191,7 +191,7 @@ def test_build_and_apply_tpsl(dp):
     classification_t1 = s.apply_entry_strategy(price_data_t1)
 
     entry_price = price_data_t1_df['Close'][-1]
-    assert classification_t1.leverage == 44
+    assert classification_t1.leverage == 35
     assert classification_t1.entering_price_planned == entry_price
     assert abs(classification_t1.tp_price - (1.1 * entry_price)) < 0.0001
     assert abs(classification_t1.sl_price - (0.98 * entry_price)) < 0.0001

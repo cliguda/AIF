@@ -417,6 +417,7 @@ class LastLow(Indicator):
                 price_data_df.loc[price_data_df['_is_low_'], col_name].shift(n)
 
         price_data_df.loc[:, col_name] = price_data_df[col_name].ffill()
+        price_data_df.loc[:, col_name] = price_data_df[col_name].shift(math.floor(window / 2))
 
         price_data_df.drop(columns=['_lowest_low', '_highest_low_left', '_highest_low_right', '_is_low_'], inplace=True)
 
@@ -456,6 +457,7 @@ class LastHigh(Indicator):
                 price_data_df.loc[price_data_df['_is_high_'], col_name].shift(n)
 
         price_data_df.loc[:, col_name] = price_data_df[col_name].ffill()
+        price_data_df.loc[:, col_name] = price_data_df[col_name].shift(math.floor(window / 2))
 
         price_data_df.drop(columns=['_highest_high', '_lowest_high_left', '_lowest_high_right', '_is_high_'],
                            inplace=True)

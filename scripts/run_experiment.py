@@ -56,13 +56,15 @@ PARAM_CONTEXT = [
     Context(Asset.LINKUSD, Timeframe.HOURLY),
 ]
 
-PARAM_STRATEGY = library_strategy.get_long_strategy_configuration
+PARAM_STRATEGY = library_strategy.get_short_strategy_configuration
 
 
 def get_performance(strategy_conf: StrategyConfiguration, context: Context,
                     dp: DataProvider, asset_information: dict[Asset, ExchangeAssetInformation]) \
         -> (StrategyPerformance, StrategyPerformance):
-    logging.get_aif_logger(__name__).info(f'Evaluate strategy for {context}:')
+    strategy = strategy_conf.strategy
+    logging.get_aif_logger(__name__).info(f'Evaluate strategy {strategy} for {context}:')
+
     # Get data
     price_data_tf = dp.get_historical_data(context.asset, context.timeframe)
     price_data = PriceDataComplete.create_from_timeframe(price_data_tf,
@@ -74,7 +76,6 @@ def get_performance(strategy_conf: StrategyConfiguration, context: Context,
     ta.add_indicators(price_data, strategy_conf.price_data_configuration.configurations)
 
     # Build and evaluate strategy
-    strategy = strategy_conf.strategy
     strategy.initialize(price_data=price_data, skip_fitting=True)
 
     # Run complete backtest - only possible for rule based strategies

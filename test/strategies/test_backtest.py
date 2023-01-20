@@ -59,14 +59,17 @@ def test_get_profit():
     strategy.initialize(price_data=price_data)
     classifier_performance = backtest.evaluate_performance(strategy=strategy, price_data=price_data)
 
-    adjusted_leverage = 10 * (1 - 0.1)
     assert len(classifier_performance.performance_detailed) == 2
-    assert abs(classifier_performance.performance_detailed[0] - ((1015 - 1055) / 1055 * adjusted_leverage)) < 0.001
-    assert abs(classifier_performance.performance_detailed[1] - ((1015 - 1060) / 1060 * adjusted_leverage)) < 0.001
+    assert abs(classifier_performance.performance_detailed[0] - -0.2654) < 0.001
+    assert abs(classifier_performance.performance_detailed[1] - -0.2971) < 0.001
 
 
 def test__get_profit_for_signal():
     """ Profit by exit strategy (Relevant: Closing price on exit signal) - Long """
+    settings.trading.default_fees = 0.0006
+    settings.trading.default_max_leverage = 50
+    settings.trading.leverage_reduction = 0.025
+
     # SL is only needed for inferring the leverage.
     risk_control = TradeRiskControl(tp=None, sl=0.1)
     strategy = Strategy(name='', trading_type=TradingType.LONG, preprocessor=[], entry_signal='False',
@@ -86,7 +89,7 @@ def test__get_profit_for_signal():
                                          idx=datetime.fromisoformat('2021-01-01'),
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage)
-    assert abs(pl[0] - 0.54) < 0.001
+    assert abs(pl[0] - 0.4158) < 0.001
 
     # Short
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
@@ -98,7 +101,7 @@ def test__get_profit_for_signal():
                                          idx=datetime.fromisoformat('2021-01-01'),
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage)
-    assert abs(pl[0] - -0.54) < 0.001
+    assert abs(pl[0] - -0.5454) < 0.001
 
     """Profit by TP hit"""
     # Long
@@ -120,7 +123,7 @@ def test__get_profit_for_signal():
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage
                                          )
-    assert abs(pl[0] - 0.63) < 0.001  # TP is hit, because High > 1070
+    assert abs(pl[0] - 0.4858) < 0.001  # TP is hit, because High > 1070
 
     # Short
     risk_control = TradeRiskControl(tp=0.03, sl=0.1)
@@ -135,7 +138,7 @@ def test__get_profit_for_signal():
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage
                                          )
-    assert abs(pl[0] - 0.27) < 0.001
+    assert abs(pl[0] - 0.2646) < 0.001
 
     """Profit by SL hit"""
     # Long
@@ -157,10 +160,10 @@ def test__get_profit_for_signal():
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage
                                          )
-    assert abs(pl[0] - -0.9) < 0.001
+    assert abs(pl[0] - -0.7042) < 0.001
 
     # Short
-    risk_control = TradeRiskControl(tp=0.03, sl=0.1)
+    risk_control = TradeRiskControl(tp=0.03, sl=0.05)
     strategy = Strategy(name='', trading_type=TradingType.SHORT, preprocessor=[], entry_signal='False',
                         exit_signal='Close > 1050', risk_control=risk_control, convert_data_for_classifier=False)
     strategy.initialize(price_data=price_data)
@@ -171,7 +174,7 @@ def test__get_profit_for_signal():
                                          fees_per_trade=settings.trading.default_fees,
                                          max_leverage=settings.trading.default_max_leverage
                                          )
-    assert abs(pl[0] - 0.27) < 0.001
+    assert abs(pl[0] - -0.86) < 0.001
 
 
 def test__get_profit_for_trade():

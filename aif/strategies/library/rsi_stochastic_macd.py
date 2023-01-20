@@ -45,17 +45,17 @@ def get_long_strategy_configuration() -> StrategyConfiguration:
     # Definition of the strategy
     # Preprocessor
     preprocessor = [
+        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'}),
         CommandDescription(Command.MARK, {'EXPR': '(Stochastic_K_14 < 20) & (Stochastic_D_14 < 20)', 'VALUE': 1,
                                           'NEW_COLUMN': 'MACD_SIGNAL'}),
         CommandDescription(Command.MARK, {'EXPR': '(Stochastic_K_14 > 80) & (Stochastic_D_14 > 80)', 'VALUE': -1,
                                           'NEW_COLUMN': 'MACD_SIGNAL'}),
         CommandDescription(Command.FFILL, {'COLUMN': 'MACD_SIGNAL'}),
-        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'})
     ]
 
     # Entry/Exit signals
     entry_signal = '(RSI_14 > 50) & (MACD_Hist > 0) & (MACD_Hist_Shift_1 < 0) & (MACD_SIGNAL == 1) & ' \
-                   '(Stochastic_K_14 > 20) & (Stochastic_D_14 > 20)'
+                   '(Stochastic_K_14 > 20) & (Stochastic_D_14 > 20) & (Close > 1.005 * Last_Low)'
     exit_signal = None
 
     # Risk control
@@ -93,17 +93,17 @@ def get_short_strategy_configuration() -> StrategyConfiguration:
     # Definition of the strategy
     # Preprocessor
     preprocessor = [
+        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'}),
         CommandDescription(Command.MARK, {'EXPR': '(Stochastic_K_14 < 20) & (Stochastic_D_14 < 20)', 'VALUE': 1,
                                           'NEW_COLUMN': 'MACD_SIGNAL'}),
         CommandDescription(Command.MARK, {'EXPR': '(Stochastic_K_14 > 80) & (Stochastic_D_14 > 80)', 'VALUE': -1,
                                           'NEW_COLUMN': 'MACD_SIGNAL'}),
         CommandDescription(Command.FFILL, {'COLUMN': 'MACD_SIGNAL'}),
-        CommandDescription(Command.SHIFT, {'COLUMN': 'MACD_Hist'})
     ]
 
     # Entry/Exit signals
     entry_signal = '(RSI_14 < 50) & (MACD_Hist < 0) & (MACD_Hist_Shift_1 > 0) & (MACD_SIGNAL == -1) & ' \
-                   '(Stochastic_K_14 < 80) & (Stochastic_D_14 < 80)'
+                   '(Stochastic_K_14 < 80) & (Stochastic_D_14 < 80) & (Close < 0.995 * Last_High)'
     exit_signal = None
 
     # Risk control

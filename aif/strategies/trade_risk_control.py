@@ -95,12 +95,16 @@ class TradeRiskControl:
             raise ValueError('Leverage can not be calculated without SL.')
 
         if trading_type == TradingType.LONG:
-            leverage = math.floor(1 / ((entry_price_planned - sl_price) / entry_price_planned))
+            # Calculation for ByBit with 0.5% margin
+            # https://www.bybit.com/en-US/help-center/bybitHC_Article?language=en_US&id=000001100
+            leverage = math.floor(1 / ((entry_price_planned / sl_price) - 0.995))
         else:
-            leverage = math.floor(1 / ((sl_price - entry_price_planned) / entry_price_planned))
+            leverage = math.floor(1 / (1.005 - (entry_price_planned / sl_price)))
 
         leverage_adjusted = math.floor((1 - settings.trading.leverage_reduction) * leverage)
-        return min(math.floor(leverage_adjusted), max_leverage)
+
+        leverage_final = min(leverage_adjusted, max_leverage)
+        return leverage_final
 
     def __str__(self):
         return f'tp: {self.tp} / sl: {self.sl}'
